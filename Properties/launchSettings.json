@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "keyvault-certsync": {
+      "commandName": "Project"
+    }
+  }
+}
