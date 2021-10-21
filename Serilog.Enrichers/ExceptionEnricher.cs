@@ -20,6 +20,9 @@ namespace Serilog.Enrichers
         /// <param name="propertyFactory">Factory for creating new properties to add to the event.</param>
         public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
         {
+            if (logEvent.Exception == null)
+                return;
+
             var message = new LogEventProperty(ExceptionMessagePropertyName, new ScalarValue(logEvent.Exception.Message));
             logEvent.AddPropertyIfAbsent(message);
         }

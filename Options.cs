@@ -28,7 +28,13 @@ namespace keyvault_certsync
         [Option('s', "store", SetName = "download", Required = false, HelpText = "Windows certificate store (CurrentUser, LocalMachine)")]
         public StoreLocation? Store { get; set; }
 
+        [Option('f', "force", SetName = "download", Required = false, HelpText = "Force download even when identical local certificate exists")]
+        public bool Force { get; set; }
+
         [Option("mark-exportable", SetName = "download", Required = false, HelpText = "Mark Windows certificate key as exportable")]
         public bool MarkExportable { get; set; }
+
+        [Option("post-hook", SetName = "download", Required = false, HelpText = "Run after downloading certificates")]
+        public string PostHook { get; set; }
     }
 }

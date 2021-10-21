@@ -28,7 +28,9 @@ export AZURE_CLIENT_CERTIFICATE_PATH=
   -n, --name           Name of certificate
   -p, --path           Base directory to store certificates
   -s, --store          Windows certificate store (CurrentUser, LocalMachine)
+  -f, --force          Force download even when identical local certificate exists
   --mark-exportable    Mark Windows certificate key as exportable
+  --post-hook          Run this after downloading certificates
   --help               Display this help screen.
   --version            Display version information.
 ```
@@ -52,6 +54,11 @@ To download a certificate named website to /etc/keyvault.
 ./keyvault-certsync -v VAULTNAME -d -n website -p /etc/keyvault
 ```
 
+To run a script after certificates are downloaded. If no certificates are downloaded or all certificates are identical the hook will be ignored.
+```
+./keyvault-certsync -v VAULTNAME -d -p /etc/keyvault --post-hook "systemctl reload haproxy"
+```
+
 The files generated follow the same convention as common Let's Encrypt utilities like certbot:
 
 * `privkey.pem` : private key for the certificate
@@ -65,7 +72,7 @@ Additionally, following files will be generated:
 
 ### download (Windows)
 
-To download all certificates to the LocalMachine certificate store.
+To download all certificates to the LocalMachine certificate store. 
 ```
 ./keyvault-certsync -v VAULTNAME -d -s LocalMachine
 ```
