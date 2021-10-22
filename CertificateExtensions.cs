@@ -1,4 +1,5 @@
 ﻿using Azure.Security.KeyVault.Secrets;
+using keyvault_certsync.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -35,7 +36,11 @@ namespace keyvault_certsync
         public static X509Certificate2Collection GetCertificate(this SecretClient secretClient, string secretName, bool keyExportable = false)
         {
             KeyVaultSecret secret = secretClient.GetSecret(secretName);
+            return secret.ToCertificate(keyExportable);
+        }
 
+        public static X509Certificate2Collection ToCertificate(this KeyVaultSecret secret, bool keyExportable = false)
+        {
             if ("application/x-pkcs12".Equals(secret.Properties.ContentType, StringComparison.InvariantCultureIgnoreCase))
             {
                 byte[] pfx = Convert.FromBase64String(secret.Value);
@@ -51,6 +56,22 @@ namespace keyvault_certsync
             }
 
             throw new NotSupportedException($"Only PKCS#12 is supported. Found Content-Type: {secret.Properties.ContentType}");
+        }
+
+        public static KeyVaultSecret ToKeyVaultSecret(this X509Certificate2Collection collection, string key, string name)
+        {
+            byte[] pfx = collection.Export(X509ContentType.Pkcs12);
+
+            KeyVaultSecret secret = new KeyVaultSecret(key, Convert.ToBase64String(pfx));
+            secret.Properties.ContentType = "application/x-pkcs12";
+            secret.Properties.NotBefore = collection[0].NotBefore;
+            secret.Properties.ExpiresOn = collection[0].NotAfter;
+            secret.Properties.Tags.Add("CertificateId", $"/certificates/{name}");
+            secret.Properties.Tags.Add("CertificateState", "Ready");
+            secret.Properties.Tags.Add("SerialNumber", collection[0].SerialNumber);
+            secret.Properties.Tags.Add("Thumbprint", collection[0].Thumbprint);
+
+            return secret;
         }
 
         public static string ToCertificatePEM(this X509Certificate2 cert)

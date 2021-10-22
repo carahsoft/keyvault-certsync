@@ -1,4 +1,4 @@
-﻿namespace keyvault_certsync
+﻿namespace keyvault_certsync.Models
 {
     public enum DownloadResult
     {

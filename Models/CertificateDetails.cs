@@ -2,7 +2,7 @@
 using System;
 using System.Linq;
 
-namespace keyvault_certsync
+namespace keyvault_certsync.Models
 {
     public class CertificateDetails
     {
@@ -26,7 +26,10 @@ namespace keyvault_certsync
             ExpiresOn = secret.ExpiresOn;
 
             CertificateId = secret.Tags.SingleOrDefault(s => s.Key == "CertificateId").Value;
-            CertificateName = CertificateId.Split('/').Last();
+
+            if(!string.IsNullOrEmpty(CertificateId) && CertificateId.Contains('/'))
+                CertificateName = CertificateId.Split('/').Last();
+
             CertificateState = secret.Tags.SingleOrDefault(s => s.Key == "CertificateState").Value;
             SerialNumber = secret.Tags.SingleOrDefault(s => s.Key == "SerialNumber").Value;
             Thumbprint = secret.Tags.SingleOrDefault(s => s.Key == "Thumbprint").Value;

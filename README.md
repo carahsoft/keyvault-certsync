@@ -9,7 +9,7 @@ dotnet publish -r linux-x64 -c Release
 dotnet publish -r win-x64-c Release
 ```
 
-## Authenticatioon
+## Authentication
 Authentication to Key Vault is performed using [Azure Identity](https://docs.microsoft.com/en-us/dotnet/api/overview/azure/identity-readme) `DefaultAzureCredential`. To automate certificate deployment it is recommended to use environment variables.
 
 For certificate authentication with environment variables
@@ -21,42 +21,37 @@ export AZURE_CLIENT_CERTIFICATE_PATH=
 
 ## Usage
 ```
-  -q, --quiet          Suppress output
-  -v, --keyvault       Required. Azure Key Vault name
-  -l, --list           Required. List certificates in Key Vault
-  -d, --download       Required. Download certificates from Key Vault
-  -n, --name           Name of certificate
-  -p, --path           Base directory to store certificates
-  -s, --store          Windows certificate store (CurrentUser, LocalMachine)
-  -f, --force          Force download even when identical local certificate exists
-  --mark-exportable    Mark Windows certificate key as exportable
-  --post-hook          Run this after downloading certificates
-  --help               Display this help screen.
-  --version            Display version information.
+  list        List certificates in Key Vault
+  download    Download certificates from Key Vault
+  upload      Upload certificate to Key Vault
+  help        Display more information on a specific command.
+  version     Display version information.
 ```
 
 ### list
+```
+  -v, --keyvault    Required. Azure Key Vault name
+  --help            Display this help screen.
+  --version         Display version information.
+```
 
 To list all certificates in the Key Vault.
 ```
-./keyvault-certsync -v VAULTNAME -l
+./keyvault-certsync list -v VAULTNAME
 ```
 
-### download (Linux)
-
-To download all certificates to /etc/keyvault.
+### download
 ```
-./keyvault-certsync -v VAULTNAME -d -p /etc/keyvault
-```
-
-To download a certificate named website to /etc/keyvault.
-```
-./keyvault-certsync -v VAULTNAME -d -n website -p /etc/keyvault
-```
-
-To run a script after certificates are downloaded. If no certificates are downloaded or all certificates are identical the hook will be ignored.
-```
-./keyvault-certsync -v VAULTNAME -d -p /etc/keyvault --post-hook "systemctl reload haproxy"
+  -q, --quiet          Suppress output
+  -n, --name           Name of certificate
+  -p, --path           (Group: location) Base directory to store certificates
+  -s, --store          (Group: location) Windows certificate store (CurrentUser, LocalMachine)
+  -f, --force          Force download even when identical local certificate exists
+  --mark-exportable    Mark Windows certificate key as exportable
+  --post-hook          Run after downloading certificates
+  -v, --keyvault       Required. Azure Key Vault name
+  --help               Display this help screen.
+  --version            Display version information.
 ```
 
 The files generated follow the same convention as common Let's Encrypt utilities like certbot:
@@ -70,19 +65,54 @@ Additionally, following files will be generated:
 
 * `fullchain.privkey.pem` : the concatenation of fullchain and privkey
 
-### download (Windows)
+#### Linux Examples
+
+To download all certificates to /etc/keyvault.
+```
+./keyvault-certsync download -v VAULTNAME -p /etc/keyvault
+```
+
+To download a certificate named website to /etc/keyvault.
+```
+./keyvault-certsync download -v VAULTNAME -n website -p /etc/keyvault
+```
+
+To run a script after certificates are downloaded. If no certificates are downloaded or all certificates are identical the hook will be ignored.
+```
+./keyvault-certsync download -v VAULTNAME -p /etc/keyvault --post-hook "systemctl reload haproxy"
+```
+
+#### Windows Examples
 
 To download all certificates to the LocalMachine certificate store. 
 ```
-./keyvault-certsync -v VAULTNAME -d -s LocalMachine
+.\keyvault-certsync download -v VAULTNAME -s LocalMachine
 ```
 
 To download all certificates to the LocalMachine certificate store and allow the certificate private key to be exported.
 ```
-./keyvault-certsync -v VAULTNAME -d -s LocalMachine --mark-exportable
+.\keyvault-certsync download -v VAULTNAME -s LocalMachine --mark-exportable
 ```
 
 To download all certificates to C:\KeyVault
 ```
-./keyvault-certsync -v VAULTNAME -d -p C:\KeyVault
+.\keyvault-certsync download -v VAULTNAME -p C:\KeyVault
+```
+
+### upload
+```
+  -q, --quiet       Suppress output
+  -n, --name        Required. Name of certificate
+  -c, --cert        Required. Path to certificate in PEM format
+  -k, --key         Required. Path to private key in PEM format
+  --chain           Path to CA chain in PEM format
+  -f, --force       Force upload even when identical kev vault certificate exists
+  -v, --keyvault    Required. Azure Key Vault name
+  --help            Display this help screen.
+  --version         Display version information.
+```
+
+To upload a certificate named website.
+```
+./keyvault-certsync upload -v VAULTNAME -n website -c cert.pem -k privkey.pem --chain chain.pem
 ```

@@ -23,7 +23,7 @@ namespace Serilog.Enrichers
             if (logEvent.Exception == null)
                 return;
 
-            var message = new LogEventProperty(ExceptionMessagePropertyName, new ScalarValue(logEvent.Exception.Message));
+            var message = new LogEventProperty(ExceptionMessagePropertyName, new ScalarValue($"{logEvent.Exception.Message}\n"));
             logEvent.AddPropertyIfAbsent(message);
         }
     }
