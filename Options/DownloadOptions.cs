@@ -9,7 +9,7 @@ namespace keyvault_certsync.Options
         [Option('q', "quiet", HelpText = "Suppress output")]
         public bool Quiet { get; set; }
 
-        [Option('n', "name", HelpText = "Name of certificate")]
+        [Option('n', "name", HelpText = "Name of certificate. Specify multiple by delimiting with commas.")]
         public string Name { get; set; }
 
         [Option('p', "path", Group = "location", HelpText = "Base directory to store certificates")]

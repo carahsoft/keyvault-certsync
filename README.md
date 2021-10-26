@@ -43,7 +43,7 @@ To list all certificates in the Key Vault.
 ### download
 ```
   -q, --quiet          Suppress output
-  -n, --name           Name of certificate
+  -n, --name           Name of certificate. Specify multiple by delimiting with commas.
   -p, --path           (Group: location) Base directory to store certificates
   -s, --store          (Group: location) Windows certificate store (CurrentUser, LocalMachine)
   -f, --force          Force download even when identical local certificate exists

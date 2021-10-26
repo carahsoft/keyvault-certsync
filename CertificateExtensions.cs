@@ -17,6 +17,12 @@ namespace keyvault_certsync
             return secrets.Select(s => new CertificateDetails(s));
         }
 
+        public static IEnumerable<CertificateDetails> GetCertificateDetails(this SecretClient secretClient, IEnumerable<string> names)
+        {
+            return secretClient.GetCertificateDetails()
+                .Where(w => names.Contains(w.CertificateName, StringComparer.CurrentCultureIgnoreCase));
+        }
+
         public static CertificateDetails GetCertificateDetails(this SecretClient secretClient, string name)
         {
             return secretClient.GetCertificateDetails()

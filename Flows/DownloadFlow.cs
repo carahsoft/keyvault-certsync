@@ -4,8 +4,10 @@ using keyvault_certsync.Options;
 using Mono.Unix;
 using Serilog;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -29,16 +31,29 @@ namespace keyvault_certsync.Flows
                 return -1;
             }
 
+            IEnumerable<CertificateDetails> certs;
             if (!string.IsNullOrEmpty(opts.Name))
             {
-                var cert = client.GetCertificateDetails(opts.Name);
+                var names = opts.Name.Split(',').ToList();
+                certs = client.GetCertificateDetails(names);
 
-                if (cert == null)
+                var missing = names.Except(certs.Select(s => s.CertificateName), StringComparer.CurrentCultureIgnoreCase);
+
+                if (missing.Any())
                 {
-                    Log.Error("Key Vault does not contain certificate with name {Name}", opts.Name);
+                    Log.Error("Key Vault does not contain certificate with name {Names}", missing);
                     return -1;
                 }
+            }
+            else
+            {
+                certs = client.GetCertificateDetails();
+            }
 
+            bool downloaded = false;
+            bool error = false;
+            foreach (var cert in certs)
+            {
                 if (!opts.Quiet)
                 {
                     Log.Information("Processing certifiate {Name}", cert.CertificateName);
@@ -48,39 +63,16 @@ namespace keyvault_certsync.Flows
                 var result = DownloadCertificate(opts, client, cert);
 
                 if (result == DownloadResult.Error)
-                    return -1;
+                    error = true;
 
                 if (result == DownloadResult.Success)
-                    return RunPostHook(opts);
-
-                return 0;
+                    downloaded = true;
             }
-            else
-            {
-                bool downloaded = false;
-                bool error = false;
-                foreach (var cert in client.GetCertificateDetails())
-                {
-                    if (!opts.Quiet)
-                    {
-                        Log.Information("Processing certifiate {Name}", cert.CertificateName);
-                        Console.WriteLine(cert.ToString());
-                    }
 
-                    var result = DownloadCertificate(opts, client, cert);
+            if (downloaded)
+                return RunPostHook(opts);
 
-                    if (result == DownloadResult.Error)
-                        error = true;
-
-                    if (result == DownloadResult.Success)
-                        downloaded = true;
-                }
-
-                if (downloaded)
-                    return RunPostHook(opts);
-
-                return error ? -1 : 0;
-            }
+            return error ? -1 : 0;
         }
 
         private bool IdenticalLocalCertificatePath(DownloadOptions opts, CertificateDetails cert)
@@ -283,12 +275,16 @@ namespace keyvault_certsync.Flows
                 return -1;
             }
 
-            if (!opts.Quiet && exitCode == 0)
-                Log.Information("Post hook '{Hook}' '{HookArguments}' completed successfully", startInfo.FileName, startInfo.Arguments);
-            else if (!opts.Quiet)
-                Log.Warning("Post hook '{Hook}' '{HookArguments}' completed with exit code {ExitCode}", startInfo.FileName, startInfo.Arguments, exitCode);
+            if(exitCode == 0)
+            {
+                if (!opts.Quiet)
+                    Log.Information("Post hook '{Hook}' '{HookArguments}' completed successfully", startInfo.FileName, startInfo.Arguments);
 
-            return exitCode != 0 ? exitCode : 0;
+                return 0;
+            }
+
+            Log.Warning("Post hook '{Hook}' '{HookArguments}' completed with exit code {ExitCode}", startInfo.FileName, startInfo.Arguments, exitCode);
+            return exitCode;
         }
     }
 }
