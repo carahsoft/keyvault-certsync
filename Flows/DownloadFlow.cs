@@ -1,10 +1,10 @@
-﻿using Azure.Security.KeyVault.Secrets;
+﻿using Azure.Core;
+using Azure.Security.KeyVault.Secrets;
 using keyvault_certsync.Models;
 using keyvault_certsync.Options;
 using keyvault_certsync.Stores;
 using Serilog;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -18,7 +18,7 @@ namespace keyvault_certsync.Flows
     {
         private readonly DownloadOptions opts;
 
-        public DownloadFlow(DownloadOptions opts) : base(opts)
+        public DownloadFlow(DownloadOptions opts, TokenCredential credential) : base(opts, credential)
         {
             this.opts = opts;
         }

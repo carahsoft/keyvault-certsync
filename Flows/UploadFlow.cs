@@ -1,4 +1,5 @@
-﻿using keyvault_certsync.Options;
+﻿using Azure.Core;
+using keyvault_certsync.Options;
 using Serilog;
 using System;
 using System.IO;
@@ -10,7 +11,7 @@ namespace keyvault_certsync.Flows
     {
         private readonly UploadOptions opts;
 
-        public UploadFlow(UploadOptions opts) : base(opts)
+        public UploadFlow(UploadOptions opts, TokenCredential credential) : base(opts, credential)
         {
             this.opts = opts;
         }

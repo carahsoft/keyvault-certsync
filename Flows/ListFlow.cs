@@ -1,11 +1,12 @@
-﻿using keyvault_certsync.Options;
+﻿using Azure.Core;
+using keyvault_certsync.Options;
 using System;
 
 namespace keyvault_certsync.Flows
 {
     public class ListFlow : BaseFlow
     {
-        public ListFlow(ListOptions opts) : base(opts)
+        public ListFlow(ListOptions opts, TokenCredential credential) : base(opts, credential)
         {
 
         }

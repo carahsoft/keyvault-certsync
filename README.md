@@ -19,6 +19,8 @@ export AZURE_TENANT_ID=
 export AZURE_CLIENT_CERTIFICATE_PATH=
 ```
 
+On Windows `ClientCertificateCredential` can be utilized by setting `AZURE_CLIENT_CERTIFICATE_THUMBPRINT` instead of `AZURE_CLIENT_CERTIFICATE_PATH`. The authentication certificate will be checked for in both the CurrentUser and LocalMachine certificate stores.
+
 ## Usage
 ```
   list        List certificates in Key Vault
@@ -120,4 +122,17 @@ To download all certificates to C:\KeyVault
 To upload a certificate named website.
 ```
 ./keyvault-certsync upload -v VAULTNAME -n website -c cert.pem -k privkey.pem --chain chain.pem
+```
+
+## Hooks
+
+The following Windows PowerShell hooks are included:
+
+* `InstallCertificateNTDS.ps1` : Copies certificate from LocalMachine to Active Directory Domain Services store
+* `InstallCertificateADFS.ps1` : Adds priate key permission and assigns certificate to Active Directory Federation Services
+* `InstallCertificateWAP.ps1` : Assigns certificate to Web Application Proxy
+
+To download a certificate and install into the Active Directory service certificate store
+```
+.\keyvault-certsync download -v cscertificates -n mydomain -s LocalMachine --post-hook "PowerShell.exe -ExecutionPolicy Bypass -File InstallCertificateNTDS.ps1"
 ```

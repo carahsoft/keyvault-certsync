@@ -13,14 +13,24 @@ namespace keyvault_certsync.Stores
             this.location = location;
         }
 
-        public bool Exists(CertificateDetails cert)
+        public X509Certificate2 Get(string thumbprint)
         {
             using X509Store store = new X509Store(location);
             store.Open(OpenFlags.ReadOnly);
 
-            var found = store.Certificates.Find(X509FindType.FindByThumbprint, cert.Thumbprint, false);
+            var certs = store.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
 
-            if (found.Count > 0 && found[0].HasPrivateKey)
+            if (certs.Count > 0)
+                return certs[0];
+
+            return null;
+        }
+
+        public bool Exists(CertificateDetails cert)
+        {
+            var x509 = Get(cert.Thumbprint);
+
+            if (x509 != null && x509.HasPrivateKey)
             {
                 Log.Information("Local certificate has identical thumbprint");
                 return true;
