@@ -3,7 +3,6 @@ using Serilog;
 using System;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 
 namespace keyvault_certsync.Flows
 {
@@ -56,15 +55,11 @@ namespace keyvault_certsync.Flows
             {
                 if (string.Equals(cert.Thumbprint, chain[0].Thumbprint, StringComparison.CurrentCultureIgnoreCase))
                 {
-                    if (!opts.Quiet)
-                        Log.Information("Key vault certificate has identical thumbprint");
-
+                    Log.Information("Key vault certificate has identical thumbprint");
                     return 0;
                 }
 
-                if (!opts.Quiet)
-                    Log.Information("Replacing exisiting key vault certificate");
-
+                Log.Information("Replacing exisiting key vault certificate");
                 key = cert.SecretName;
             }
 

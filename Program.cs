@@ -1,9 +1,9 @@
-﻿using Azure.Identity;
-using CommandLine;
+﻿using CommandLine;
 using keyvault_certsync.Flows;
 using keyvault_certsync.Options;
 using Serilog;
-using System;
+using Serilog.Core;
+using Serilog.Events;
 using System.Collections.Generic;
 
 namespace keyvault_certsync
@@ -14,8 +14,11 @@ namespace keyvault_certsync
         {
             string log_format = "{Level:u3}] {Message:lj}{NewLine}{ExceptionMessage}";
 
+            var levelSwitch = new LoggingLevelSwitch();
+            levelSwitch.MinimumLevel = LogEventLevel.Verbose;
+
             var log_config = new LoggerConfiguration()
-                .MinimumLevel.Verbose()
+                .MinimumLevel.ControlledBy(levelSwitch)
                 .Enrich.WithExceptionMessage()
                 .WriteTo.Console(outputTemplate: log_format);
 
@@ -23,8 +26,20 @@ namespace keyvault_certsync
 
             int result = Parser.Default.ParseArguments<ListOptions, DownloadOptions, UploadOptions>(args).MapResult(
                 (ListOptions opts) => new ListFlow(opts).Run(),
-                (DownloadOptions opts) => new DownloadFlow(opts).Run(),
-                (UploadOptions opts) => new UploadFlow(opts).Run(),
+                (DownloadOptions opts) =>
+                {
+                    if (opts.Quiet)
+                        levelSwitch.MinimumLevel = LogEventLevel.Warning;
+
+                    return new DownloadFlow(opts).Run();
+                },
+                (UploadOptions opts) =>
+                {
+                    if (opts.Quiet)
+                        levelSwitch.MinimumLevel = LogEventLevel.Warning;
+
+                    return new UploadFlow(opts).Run();
+                },
                 errs => HandleParseError(errs));
 
             return result;

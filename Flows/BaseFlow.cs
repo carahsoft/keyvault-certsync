@@ -8,12 +8,6 @@ namespace keyvault_certsync.Flows
 {
     public abstract class BaseFlow
     {
-        protected const string CERT_PEM = "cert.pem";
-        protected const string PRIVKEY_PEM = "privkey.pem";
-        protected const string CHAIN_PEM = "chain.pem";
-        protected const string FULLCHAIN_PEM = "fullchain.pem";
-        protected const string FULLKEYCHAIN_PEM = "fullchain.privkey.pem";
-
         protected readonly SecretClient client;
 
         public BaseFlow(BaseOptions opts)

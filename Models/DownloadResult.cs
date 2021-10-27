@@ -3,7 +3,7 @@
     public enum DownloadResult
     {
         Error = -1,
-        Success = 0,
+        Downloaded = 0,
         AlreadyExists = 1
     }
 }
