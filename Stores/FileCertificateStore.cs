@@ -55,7 +55,7 @@ namespace keyvault_certsync.Stores
                 Directory.CreateDirectory(cert.GetPath(path));
 
             if (!force && Exists(cert))
-                return DownloadResult.AlreadyExists;
+                return new DownloadResult(DownloadStatus.AlreadyExists, cert);
 
             Log.Information("Downloading certificate to {Path}", cert.GetPath(path));
 
@@ -91,7 +91,7 @@ namespace keyvault_certsync.Stores
                 File.WriteAllText(cert.GetPath(path, FULLKEYCHAIN_PEM), pemFullChain.ToString());
             }
 
-            return DownloadResult.Downloaded;
+            return new DownloadResult(DownloadStatus.Downloaded, cert);
         }
 
         private void CreateFileWithUserReadWrite(string filename)

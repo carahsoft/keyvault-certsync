@@ -65,6 +65,11 @@ Additionally, following files will be generated:
 
 * `fullchain.privkey.pem` : the concatenation of fullchain and privkey
 
+The post hook will have the following environment variables passed to the script:
+
+* `CERTIFICATE_NAMES` : A comma-separated list of certificate names that were downloaded
+* `CERTIFICATE_THUMBPRINTS` : A comma-separated list of certificate thumbprints that were downloaded
+
 #### Linux Examples
 
 To download all certificates to /etc/keyvault.

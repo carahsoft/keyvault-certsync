@@ -32,7 +32,7 @@ namespace keyvault_certsync.Stores
         public DownloadResult Save(CertificateDetails cert, X509Certificate2Collection chain, bool force)
         {
             if (!force && Exists(cert))
-                return DownloadResult.AlreadyExists;
+                return new DownloadResult(DownloadStatus.AlreadyExists, cert);
 
             using X509Store store = new X509Store(location);
             store.Open(OpenFlags.ReadWrite);
@@ -51,7 +51,7 @@ namespace keyvault_certsync.Stores
                 rootStore.Add(chain[i]);
             }
 
-            return DownloadResult.Downloaded;
+            return new DownloadResult(DownloadStatus.Downloaded, cert);
         }
     }
 }

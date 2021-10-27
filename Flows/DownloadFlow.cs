@@ -4,6 +4,7 @@ using keyvault_certsync.Options;
 using keyvault_certsync.Stores;
 using Serilog;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -60,10 +61,10 @@ namespace keyvault_certsync.Flows
                 results.Add(DownloadCertificate(opts, client, cert));
             }
 
-            if (results.Any(w => w == DownloadResult.Downloaded) && !string.IsNullOrEmpty(opts.PostHook))
-                return RunPostHook(opts.PostHook);
+            if (results.Any(w => w.Status == DownloadStatus.Downloaded) && !string.IsNullOrEmpty(opts.PostHook))
+                return RunPostHook(opts.PostHook, results.Where(w => w.Status == DownloadStatus.Downloaded));
 
-            return results.Any(w => w == DownloadResult.Error) ? -1 : 0;
+            return results.Any(w => w.Status == DownloadStatus.Error) ? -1 : 0;
         }
 
         private DownloadResult DownloadCertificate(DownloadOptions opts, SecretClient client, CertificateDetails cert)
@@ -76,12 +77,12 @@ namespace keyvault_certsync.Flows
             catch (Azure.RequestFailedException ex)
             {
                 Log.Error(ex, "Error downloading certificate from Key Vault");
-                return DownloadResult.Error;
+                return new DownloadResult(DownloadStatus.Error);
             }
             catch (NotSupportedException ex)
             {
                 Log.Error(ex, "Key Vault certificate is invalid");
-                return DownloadResult.Error;
+                return new DownloadResult(DownloadStatus.Error);
             }
 
             ICertificateStore store;
@@ -95,7 +96,7 @@ namespace keyvault_certsync.Flows
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     Log.Error("Certificate store is only supported on Windows");
-                    return DownloadResult.Error;
+                    return new DownloadResult(DownloadStatus.Error);
                 }
 
                 store = new WindowsCertificateStore(opts.Store.Value);
@@ -103,17 +104,20 @@ namespace keyvault_certsync.Flows
             else
             {
                 Log.Error("Must specify --path or --store option");
-                return DownloadResult.Error;
+                return new DownloadResult(DownloadStatus.Error);
             }
 
             return store.Save(cert, chain, opts.Force);
         }
 
-        private int RunPostHook(string command)
+        private int RunPostHook(string command, IEnumerable<DownloadResult> results)
         {
             string[] parts = command.Split(new[] { ' ' }, 2);
 
             ProcessStartInfo startInfo = new ProcessStartInfo(parts[0]);
+
+            startInfo.EnvironmentVariables.Add("CERTIFICATE_NAMES", string.Join(",", results.Select(s => s.CertificateName)));
+            startInfo.EnvironmentVariables.Add("CERTIFICATE_THUMBPRINTS", string.Join(",", results.Select(s => s.Thumbprint)));
 
             if (parts.Length > 1)
                 startInfo.Arguments = parts[1];
@@ -121,7 +125,6 @@ namespace keyvault_certsync.Flows
             int exitCode;
             try
             {
-
                 using var process = Process.Start(startInfo);
                 process.WaitForExit();
                 exitCode = process.ExitCode;

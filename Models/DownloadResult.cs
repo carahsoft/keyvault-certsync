@@ -1,9 +1,16 @@
 ﻿namespace keyvault_certsync.Models
 {
-    public enum DownloadResult
+    public class DownloadResult
     {
-        Error = -1,
-        Downloaded = 0,
-        AlreadyExists = 1
+        public string CertificateName { get; }
+        public string Thumbprint { get; }
+        public DownloadStatus Status { get; }
+
+        public DownloadResult(DownloadStatus status, CertificateDetails cert = null)
+        {
+            Status = status;
+            CertificateName = cert?.CertificateName;
+            Thumbprint = cert?.Thumbprint;
+        }
     }
 }
