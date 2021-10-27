@@ -49,15 +49,12 @@ namespace keyvault_certsync.Stores
             return false;
         }
 
-        public DownloadResult Save(CertificateDetails cert, X509Certificate2Collection chain, bool force)
+        public DownloadResult Save(CertificateDetails cert, X509Certificate2Collection chain)
         {
             if (!Directory.Exists(cert.GetPath(path)))
                 Directory.CreateDirectory(cert.GetPath(path));
 
-            if (!force && Exists(cert))
-                return new DownloadResult(DownloadStatus.AlreadyExists, cert);
-
-            Log.Information("Downloading certificate to {Path}", cert.GetPath(path));
+            Log.Information("Saving certificate to {Path}", cert.GetPath(path));
 
             StringBuilder pemFullChain = new StringBuilder();
 

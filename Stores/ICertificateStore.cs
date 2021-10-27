@@ -7,6 +7,6 @@ namespace keyvault_certsync.Stores
     {
         bool Exists(CertificateDetails cert);
 
-        DownloadResult Save(CertificateDetails cert, X509Certificate2Collection chain, bool force);
+        DownloadResult Save(CertificateDetails cert, X509Certificate2Collection chain);
     }
 }

@@ -107,7 +107,10 @@ namespace keyvault_certsync.Flows
                 return new DownloadResult(DownloadStatus.Error);
             }
 
-            return store.Save(cert, chain, opts.Force);
+            if (!opts.Force && store.Exists(cert))
+                return new DownloadResult(DownloadStatus.AlreadyExists, cert);
+
+            return store.Save(cert, chain);
         }
 
         private int RunPostHook(string command, IEnumerable<DownloadResult> results)

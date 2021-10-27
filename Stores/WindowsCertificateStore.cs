@@ -29,11 +29,8 @@ namespace keyvault_certsync.Stores
             return false;
         }
 
-        public DownloadResult Save(CertificateDetails cert, X509Certificate2Collection chain, bool force)
+        public DownloadResult Save(CertificateDetails cert, X509Certificate2Collection chain)
         {
-            if (!force && Exists(cert))
-                return new DownloadResult(DownloadStatus.AlreadyExists, cert);
-
             using X509Store store = new X509Store(location);
             store.Open(OpenFlags.ReadWrite);
 
