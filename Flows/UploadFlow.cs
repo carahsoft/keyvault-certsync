@@ -36,7 +36,7 @@ namespace keyvault_certsync.Flows
                 return -1;
             }
 
-            X509Certificate2Collection chain = new X509Certificate2Collection();
+            var chain = new X509Certificate2Collection();
             try
             {
                 chain.Add(X509Certificate2.CreateFromPemFile(opts.Certificate, opts.PrivateKey));

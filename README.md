@@ -67,13 +67,12 @@ Additionally, following files will be generated:
 
 * `fullchain.privkey.pem` : the concatenation of fullchain and privkey
 
-The post hook will have the following environment variables passed to the script:
+The post hook will run once and only if certificates are downloaded. The following environment variables will be passed to the script:
 
 * `CERTIFICATE_NAMES` : A comma-separated list of certificate names that were downloaded
 * `CERTIFICATE_THUMBPRINTS` : A comma-separated list of certificate thumbprints that were downloaded
 
 #### Linux Examples
-
 To download all certificates to /etc/keyvault.
 ```
 ./keyvault-certsync download -v VAULTNAME -p /etc/keyvault
@@ -90,7 +89,6 @@ To run a script after certificates are downloaded. If no certificates are downlo
 ```
 
 #### Windows Examples
-
 To download all certificates to the LocalMachine certificate store. 
 ```
 .\keyvault-certsync download -v VAULTNAME -s LocalMachine
@@ -125,14 +123,16 @@ To upload a certificate named website.
 ```
 
 ## Hooks
-
 The following Windows PowerShell hooks are included:
 
 * `InstallCertificateNTDS.ps1` : Copies certificate from LocalMachine to Active Directory Domain Services store
-* `InstallCertificateADFS.ps1` : Adds priate key permission and assigns certificate to Active Directory Federation Services
+* `InstallCertificateADFS.ps1` : Adds private key permission and assigns certificate to Active Directory Federation Services
 * `InstallCertificateWAP.ps1` : Assigns certificate to Web Application Proxy
 
 To download a certificate and install into the Active Directory service certificate store
 ```
 .\keyvault-certsync download -v cscertificates -n mydomain -s LocalMachine --post-hook "PowerShell.exe -ExecutionPolicy Bypass -File InstallCertificateNTDS.ps1"
 ```
+
+## Logging
+Session output is logged to a monthly rolling log and retained for 6 months. The log directory on Linux is `/var/log/keyvault-certsync/` and Windows `%ProgramData%\keyvault-certsync\`.

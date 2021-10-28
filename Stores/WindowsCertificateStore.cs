@@ -15,7 +15,7 @@ namespace keyvault_certsync.Stores
 
         public X509Certificate2 Get(string thumbprint)
         {
-            using X509Store store = new X509Store(location);
+            using var store = new X509Store(location);
             store.Open(OpenFlags.ReadOnly);
 
             var certs = store.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
@@ -41,7 +41,7 @@ namespace keyvault_certsync.Stores
 
         public DownloadResult Save(CertificateDetails cert, X509Certificate2Collection chain)
         {
-            using X509Store store = new X509Store(location);
+            using var store = new X509Store(location);
             store.Open(OpenFlags.ReadWrite);
 
             Log.Information("Adding certificate {Subject}", chain[0].Subject);
@@ -49,7 +49,7 @@ namespace keyvault_certsync.Stores
             chain[0].FriendlyName = cert.CertificateName;
             store.Add(chain[0]);
 
-            using X509Store rootStore = new X509Store(StoreName.Root, location);
+            using var rootStore = new X509Store(StoreName.Root, location);
             rootStore.Open(OpenFlags.ReadWrite);
 
             for (int i = 1; i < chain.Count; i++)

@@ -8,7 +8,7 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 
@@ -19,14 +19,20 @@ namespace keyvault_certsync
         static int Main(string[] args)
         {
             string log_format = "{Level:u3}] {Message:lj}{NewLine}{ExceptionMessage}";
+            string file_format = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} " + log_format;
 
-            var levelSwitch = new LoggingLevelSwitch();
-            levelSwitch.MinimumLevel = LogEventLevel.Verbose;
+            var levelSwitch = new LoggingLevelSwitch
+            {
+                MinimumLevel = LogEventLevel.Verbose
+            };
+
+            string logDir = GetLogDirectory();
 
             var log_config = new LoggerConfiguration()
-                .MinimumLevel.ControlledBy(levelSwitch)
                 .Enrich.WithExceptionMessage()
-                .WriteTo.Console(outputTemplate: log_format);
+                .WriteTo.Console(outputTemplate: log_format, levelSwitch: levelSwitch)
+                .WriteTo.File(Path.Combine(logDir, "keyvault-certsync.log"), outputTemplate: file_format,
+                    rollingInterval: RollingInterval.Month, retainedFileCountLimit: 6);
 
             Log.Logger = log_config.CreateLogger();
 
@@ -38,6 +44,7 @@ namespace keyvault_certsync
             catch (Exception ex)
             {
                 Log.Error(ex.Message);
+                Log.CloseAndFlush();
                 return -1;
             }
 
@@ -57,9 +64,28 @@ namespace keyvault_certsync
 
                     return new UploadFlow(opts, credential).Run();
                 },
-                errs => HandleParseError(errs));
+                errs => HandleParseError());
 
+            Log.CloseAndFlush();
             return result;
+        }
+
+        private static string GetLogDirectory()
+        {
+            try
+            {
+                string logDir = Path.Combine(
+                    (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "/var/log/" :
+                        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)),
+                    "keyvault-certsync");
+                Directory.CreateDirectory(logDir);
+                return logDir;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error creating log directory. Defaulting to working directory. {ex.Message}");
+                return string.Empty;
+            }
         }
 
         private static TokenCredential GetCredential()
@@ -92,7 +118,7 @@ namespace keyvault_certsync
             return new DefaultAzureCredential();
         }
 
-        private static int HandleParseError(IEnumerable<Error> errs)
+        private static int HandleParseError()
         {
             return -1;
         }

@@ -56,7 +56,7 @@ namespace keyvault_certsync.Stores
 
             Log.Information("Saving certificate to {Path}", cert.GetPath(path));
 
-            StringBuilder pemFullChain = new StringBuilder();
+            var pemFullChain = new StringBuilder();
 
             Log.Information("Adding certificate {Subject}", chain[0].Subject);
 
@@ -64,7 +64,7 @@ namespace keyvault_certsync.Stores
             pemFullChain.AppendLine(pemCert);
             File.WriteAllText(cert.GetPath(path, CERT_PEM), pemCert);
 
-            StringBuilder pemChain = new StringBuilder();
+            var pemChain = new StringBuilder();
             for (int i = 1; i < chain.Count; i++)
             {
                 Log.Information("Adding chain certificate {Subject}", chain[i].Subject);
@@ -91,7 +91,7 @@ namespace keyvault_certsync.Stores
             return new DownloadResult(DownloadStatus.Downloaded, cert);
         }
 
-        private void CreateFileWithUserReadWrite(string filename)
+        private static void CreateFileWithUserReadWrite(string filename)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {

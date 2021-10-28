@@ -51,7 +51,7 @@ namespace keyvault_certsync
             {
                 byte[] pfx = Convert.FromBase64String(secret.Value);
 
-                X509Certificate2Collection collection = new X509Certificate2Collection();
+                var collection = new X509Certificate2Collection();
 
                 if (keyExportable)
                     collection.Import(pfx, null, X509KeyStorageFlags.Exportable);
@@ -68,7 +68,7 @@ namespace keyvault_certsync
         {
             byte[] pfx = collection.Export(X509ContentType.Pkcs12);
 
-            KeyVaultSecret secret = new KeyVaultSecret(key, Convert.ToBase64String(pfx));
+            var secret = new KeyVaultSecret(key, Convert.ToBase64String(pfx));
             secret.Properties.ContentType = "application/x-pkcs12";
             secret.Properties.NotBefore = collection[0].NotBefore;
             secret.Properties.ExpiresOn = collection[0].NotAfter;

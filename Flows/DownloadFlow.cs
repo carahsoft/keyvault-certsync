@@ -50,15 +50,11 @@ namespace keyvault_certsync.Flows
                 certs = client.GetCertificateDetails();
             }
 
-            List<DownloadResult> results = new List<DownloadResult>();
+            var results = new List<DownloadResult>();
             foreach (var cert in certs)
             {
-                Log.Information("Processing certifiate {Name}", cert.CertificateName);
-
-                if (!opts.Quiet)
-                    Console.WriteLine(cert.ToString());
-
-                results.Add(DownloadCertificate(opts, client, cert));
+                Log.Information("Processing certifiate {Name}\n{Certificate}", cert.CertificateName, cert.ToString());
+                results.Add(DownloadCertificate(cert));
             }
 
             if (results.Any(w => w.Status == DownloadStatus.Downloaded) && !string.IsNullOrEmpty(opts.PostHook))
@@ -67,7 +63,7 @@ namespace keyvault_certsync.Flows
             return results.Any(w => w.Status == DownloadStatus.Error) ? -1 : 0;
         }
 
-        private DownloadResult DownloadCertificate(DownloadOptions opts, SecretClient client, CertificateDetails cert)
+        private DownloadResult DownloadCertificate(CertificateDetails cert)
         {
             X509Certificate2Collection chain;
             try
@@ -113,11 +109,11 @@ namespace keyvault_certsync.Flows
             return store.Save(cert, chain);
         }
 
-        private int RunPostHook(string command, IEnumerable<DownloadResult> results)
+        private static int RunPostHook(string command, IEnumerable<DownloadResult> results)
         {
             string[] parts = command.Split(new[] { ' ' }, 2);
 
-            ProcessStartInfo startInfo = new ProcessStartInfo(parts[0]);
+            var startInfo = new ProcessStartInfo(parts[0]);
 
             startInfo.EnvironmentVariables.Add("CERTIFICATE_NAMES", string.Join(",", results.Select(s => s.CertificateName)));
             startInfo.EnvironmentVariables.Add("CERTIFICATE_THUMBPRINTS", string.Join(",", results.Select(s => s.Thumbprint)));
@@ -125,6 +121,11 @@ namespace keyvault_certsync.Flows
             if (parts.Length > 1)
                 startInfo.Arguments = parts[1];
 
+            return RunHook(startInfo, "Post");
+        }
+
+        private static int RunHook(ProcessStartInfo startInfo, string type)
+        {
             int exitCode;
             try
             {
@@ -134,17 +135,17 @@ namespace keyvault_certsync.Flows
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Unable to start post hook '{Hook}' '{HookArguments}'", startInfo.FileName, startInfo.Arguments);
+                Log.Error(ex, "{HookType} hook '{Hook}' '{HookArguments}' failed to run", type, startInfo.FileName, startInfo.Arguments);
                 return -1;
             }
 
-            if(exitCode == 0)
+            if (exitCode == 0)
             {
-                Log.Information("Post hook '{Hook}' '{HookArguments}' completed successfully", startInfo.FileName, startInfo.Arguments);
+                Log.Information("{HookType} hook '{Hook}' '{HookArguments}' completed successfully", type, startInfo.FileName, startInfo.Arguments);
                 return 0;
             }
 
-            Log.Warning("Post hook '{Hook}' '{HookArguments}' completed with exit code {ExitCode}", startInfo.FileName, startInfo.Arguments, exitCode);
+            Log.Warning("{HookType} hook '{Hook}' '{HookArguments}' completed with exit code {ExitCode}", type, startInfo.FileName, startInfo.Arguments, exitCode);
             return exitCode;
         }
     }
