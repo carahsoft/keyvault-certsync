@@ -56,8 +56,8 @@ namespace keyvault_certsync.Flows
             {
                 var result = DownloadCertificate(cert);
 
-                if (result.Status == DownloadStatus.Downloaded && 
-                    Hooks.RunDeployHook(opts.DeployHook, result) != 0)
+                if (result.Status == DownloadStatus.Downloaded &&
+                    !string.IsNullOrEmpty(opts.DeployHook) && Hooks.RunDeployHook(opts.DeployHook, result) != 0)
                     hookFailed = true;
 
                 if (opts.Automate && result.Status != DownloadStatus.Error)
@@ -74,23 +74,6 @@ namespace keyvault_certsync.Flows
 
         private DownloadResult DownloadCertificate(CertificateDetails cert)
         {
-            X509Certificate2Collection chain;
-            try
-            {
-                chain = client.GetCertificate(cert.SecretName, !string.IsNullOrEmpty(opts.Path) || opts.MarkExportable);
-                Log.Information("Downloaded certificate {Name} from key {Key}", cert.CertificateName, cert.SecretName);
-            }
-            catch (Azure.RequestFailedException ex)
-            {
-                Log.Error(ex, "Error downloading certificate {Name} from key {Key}", cert.CertificateName, cert.SecretName);
-                return new DownloadResult(DownloadStatus.Error);
-            }
-            catch (NotSupportedException ex)
-            {
-                Log.Error(ex, "Key vault certificate {Name} from key {Key} is invalid", cert.CertificateName, cert.SecretName);
-                return new DownloadResult(DownloadStatus.Error);
-            }
-
             ICertificateStore store;
 
             if (!string.IsNullOrEmpty(opts.Path))
@@ -113,21 +96,38 @@ namespace keyvault_certsync.Flows
                 return new DownloadResult(DownloadStatus.Error);
             }
 
+            if (store.Exists(cert))
+            {
+                if (!opts.Force)
+                {
+                    Log.Information("Local certificate {Name} has identical thumbprint", cert.CertificateName);
+                    return new DownloadResult(DownloadStatus.AlreadyExists, cert);
+                }
+                else
+                {
+                    Log.Information("Force replacing local certificate {Name}", cert.CertificateName);
+                }
+            }
+
+            X509Certificate2Collection chain;
             try
             {
-                if (store.Exists(cert))
-                {
-                    if (!opts.Force)
-                    {
-                        Log.Information("Local certificate {Name} has identical thumbprint", cert.CertificateName);
-                        return new DownloadResult(DownloadStatus.AlreadyExists, cert);
-                    }
-                    else
-                    {
-                        Log.Information("Force replacing local certificate {Name}", cert.CertificateName);
-                    }
-                }
+                chain = client.GetCertificate(cert.SecretName, !string.IsNullOrEmpty(opts.Path) || opts.MarkExportable);
+                Log.Information("Downloaded certificate {Name} from key {Key}", cert.CertificateName, cert.SecretName);
+            }
+            catch (Azure.RequestFailedException ex)
+            {
+                Log.Error(ex, "Error downloading certificate {Name} from key {Key}", cert.CertificateName, cert.SecretName);
+                return new DownloadResult(DownloadStatus.Error);
+            }
+            catch (NotSupportedException ex)
+            {
+                Log.Error(ex, "Key vault certificate {Name} from key {Key} is invalid", cert.CertificateName, cert.SecretName);
+                return new DownloadResult(DownloadStatus.Error);
+            }
 
+            try
+            {
                 return store.Save(cert, chain);
             }
             catch (Exception ex)
