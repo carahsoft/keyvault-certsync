@@ -1,0 +1,4 @@
+#!/bin/bash
+VAULT=YOUR_VAULT_NAME
+DOMAIN=`basename $RENEWED_LINEAGE | sed "s/.com$//g" | sed "s/\.//g"`
+keyvault-certsync upload -v $VAULT -n $DOMAIN -c $RENEWED_LINEAGE/cert.pem -k $RENEWED_LINEAGE/privkey.pem --chain $RENEWED_LINEAGE/chain.pem -q

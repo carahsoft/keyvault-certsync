@@ -1,0 +1,4 @@
+#!/bin/bash
+DOMAIN=`basename $CERTIFICATE_PATH`
+cat $CERTIFICATE_PATH/fullchain.pem $CERTIFICATE_PATH/privkey.pem > /etc/haproxy/ssl/$DOMAIN.pem
+chmod 600 /etc/haproxy/ssl/$DOMAIN.pem

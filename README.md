@@ -2,6 +2,8 @@
 
 **keyvault-certsync** is a tool to deploy certificates to Linux and Windows systems from  Azure Key Vault. It supports PKCS12 certificates stored in Azure Key Vault secrets. You can use Azuure App Service to [add and manage TLS/SSL certificates](https://docs.microsoft.com/en-us/azure/app-service/configure-ssl-certificate).
 
+Be sure to check out the included [Hooks](Hooks) and [Extras](Extras).
+
 ## Install
 Build a single file executable for your platform using dotnet publish. Check the [RID Catalog](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog) for other platform identifiers.
 ```
@@ -87,7 +89,7 @@ The deploy hook will run for each certificate after it is downloaded.
 * `CERTIFICATE_THUMBPRINT` : Thumbprint of the certificate
 * `CERTIFICATE_PATH` : Path to certificate folder, if using `--path` option
 
-The post hook will run once after all certificates are downloaded. If all certificates are identical it will not run. The following environment variables will be passed to the script:
+The post hook will run once after all certificates are downloaded. If no certificates are downloaded or all certificates are identical the hook will be ignored. The following environment variables will be passed to the script:
 
 * `CERTIFICATE_NAMES` : A comma-separated list of certificate names that were downloaded
 * `CERTIFICATE_THUMBPRINTS` : A comma-separated list of certificate thumbprints that were downloaded
@@ -103,7 +105,7 @@ To download a certificate named website to /etc/keyvault and generate config to 
 ./keyvault-certsync download -v VAULTNAME -n website -p /etc/keyvault -a
 ```
 
-To run a script after certificates are downloaded. If no certificates are downloaded or all certificates are identical the hook will be ignored.
+To run a script after all certificates are downloaded.
 ```
 ./keyvault-certsync download -v VAULTNAME -p /etc/keyvault --post-hook "systemctl reload haproxy"
 ```
@@ -175,19 +177,6 @@ To upload a certificate named website.
 To delete a certificate named website.
 ```
 ./keyvault-certsync delete -v VAULTNAME -n website
-```
-
-## Hooks
-The following Windows PowerShell deploy hooks are included:
-
-* `DeployHookNTDS.ps1` : Copies certificate from LocalMachine to Active Directory Domain Services store
-* `DeployHookADFS.ps1` : Adds private key permission and assigns certificate to Active Directory Federation Services
-* `DeployHookWAP.ps1` : Assigns certificate to Web Application Proxy
-* `DeployHookView.ps1` : Sets certificate friendly name to vdm
-
-To download a certificate and install into the Active Directory service certificate store
-```
-.\keyvault-certsync download -v cscertificates -n mydomain -s LocalMachine --deploy-hook "PowerShell.exe -ExecutionPolicy Bypass -File DeployHookNTDS.ps1"
 ```
 
 ## Logging
