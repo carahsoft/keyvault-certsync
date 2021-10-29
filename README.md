@@ -1,6 +1,6 @@
 # keyvault-certsync
 
-**keyvault-certsync** is a tool to deploy certificates to Linux and Windows systems from  Azure Key Vault. It supports PKCS12 certificates stored in Azure Key Vault secrets. You can use Azuure App Service to [add and manage TLS/SSL certificates](https://docs.microsoft.com/en-us/azure/app-service/configure-ssl-certificate).
+**keyvault-certsync** is a tool to deploy certificates to Linux and Windows systems from  Azure Key Vault. It supports PKCS12 certificates stored in Azure Key Vault secrets. You can use Azure App Service to [add and manage TLS/SSL certificates](https://docs.microsoft.com/en-us/azure/app-service/configure-ssl-certificate).
 
 Be sure to check out the included [Hooks](Hooks) and [Extras](Extras).
 
