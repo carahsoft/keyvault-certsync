@@ -178,15 +178,16 @@ To delete a certificate named website.
 ```
 
 ## Hooks
-The following Windows PowerShell hooks are included:
+The following Windows PowerShell deploy hooks are included:
 
-* `InstallCertificateNTDS.ps1` : Copies certificate from LocalMachine to Active Directory Domain Services store
-* `InstallCertificateADFS.ps1` : Adds private key permission and assigns certificate to Active Directory Federation Services
-* `InstallCertificateWAP.ps1` : Assigns certificate to Web Application Proxy
+* `DeployHookNTDS.ps1` : Copies certificate from LocalMachine to Active Directory Domain Services store
+* `DeployHookADFS.ps1` : Adds private key permission and assigns certificate to Active Directory Federation Services
+* `DeployHookWAP.ps1` : Assigns certificate to Web Application Proxy
+* `DeployHookView.ps1` : Sets certificate friendly name to vdm
 
 To download a certificate and install into the Active Directory service certificate store
 ```
-.\keyvault-certsync download -v cscertificates -n mydomain -s LocalMachine --post-hook "PowerShell.exe -ExecutionPolicy Bypass -File InstallCertificateNTDS.ps1"
+.\keyvault-certsync download -v cscertificates -n mydomain -s LocalMachine --deploy-hook "PowerShell.exe -ExecutionPolicy Bypass -File DeployHookNTDS.ps1"
 ```
 
 ## Logging
