@@ -1,5 +1,4 @@
 ﻿using Azure.Core;
-using Azure.Security.KeyVault.Secrets;
 using keyvault_certsync.Models;
 using keyvault_certsync.Options;
 using keyvault_certsync.Stores;
@@ -11,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 
 namespace keyvault_certsync.Flows
 {
@@ -18,7 +18,7 @@ namespace keyvault_certsync.Flows
     {
         private readonly DownloadOptions opts;
 
-        public DownloadFlow(DownloadOptions opts, TokenCredential credential) : base(opts, credential)
+        public DownloadFlow(DownloadOptions opts, TokenCredential credential) : base(credential, opts.KeyVault)
         {
             this.opts = opts;
         }
@@ -41,7 +41,7 @@ namespace keyvault_certsync.Flows
 
                 if (missing.Any())
                 {
-                    Log.Error("Key Vault does not contain certificate with name {Names}", missing);
+                    Log.Error("Key vault does not contain certificate with name {Names}", missing);
                     return -1;
                 }
             }
@@ -50,17 +50,26 @@ namespace keyvault_certsync.Flows
                 certs = client.GetCertificateDetails();
             }
 
+            bool hookFailed = false;
             var results = new List<DownloadResult>();
             foreach (var cert in certs)
             {
-                Log.Information("Processing certifiate {Name}\n{Certificate}", cert.CertificateName, cert.ToString());
-                results.Add(DownloadCertificate(cert));
+                var result = DownloadCertificate(cert);
+
+                if (result.Status == DownloadStatus.Downloaded && 
+                    Hooks.RunDeployHook(opts.DeployHook, result) != 0)
+                    hookFailed = true;
+
+                if (opts.Automate && result.Status != DownloadStatus.Error)
+                    AddAutomation(cert.CertificateName);
+
+                results.Add(result);
             }
 
             if (results.Any(w => w.Status == DownloadStatus.Downloaded) && !string.IsNullOrEmpty(opts.PostHook))
-                return RunPostHook(opts.PostHook, results.Where(w => w.Status == DownloadStatus.Downloaded));
+                Hooks.AddPostHook(opts.PostHook, results.Where(w => w.Status == DownloadStatus.Downloaded));
 
-            return results.Any(w => w.Status == DownloadStatus.Error) ? -1 : 0;
+            return results.Any(w => w.Status == DownloadStatus.Error) || hookFailed ? -1 : 0;
         }
 
         private DownloadResult DownloadCertificate(CertificateDetails cert)
@@ -69,15 +78,16 @@ namespace keyvault_certsync.Flows
             try
             {
                 chain = client.GetCertificate(cert.SecretName, !string.IsNullOrEmpty(opts.Path) || opts.MarkExportable);
+                Log.Information("Downloaded certificate {Name} from key {Key}", cert.CertificateName, cert.SecretName);
             }
             catch (Azure.RequestFailedException ex)
             {
-                Log.Error(ex, "Error downloading certificate from Key Vault");
+                Log.Error(ex, "Error downloading certificate {Name} from key {Key}", cert.CertificateName, cert.SecretName);
                 return new DownloadResult(DownloadStatus.Error);
             }
             catch (NotSupportedException ex)
             {
-                Log.Error(ex, "Key Vault certificate is invalid");
+                Log.Error(ex, "Key vault certificate {Name} from key {Key} is invalid", cert.CertificateName, cert.SecretName);
                 return new DownloadResult(DownloadStatus.Error);
             }
 
@@ -103,50 +113,50 @@ namespace keyvault_certsync.Flows
                 return new DownloadResult(DownloadStatus.Error);
             }
 
-            if (!opts.Force && store.Exists(cert))
-                return new DownloadResult(DownloadStatus.AlreadyExists, cert);
-
-            return store.Save(cert, chain);
-        }
-
-        private static int RunPostHook(string command, IEnumerable<DownloadResult> results)
-        {
-            string[] parts = command.Split(new[] { ' ' }, 2);
-
-            var startInfo = new ProcessStartInfo(parts[0]);
-
-            startInfo.EnvironmentVariables.Add("CERTIFICATE_NAMES", string.Join(",", results.Select(s => s.CertificateName)));
-            startInfo.EnvironmentVariables.Add("CERTIFICATE_THUMBPRINTS", string.Join(",", results.Select(s => s.Thumbprint)));
-
-            if (parts.Length > 1)
-                startInfo.Arguments = parts[1];
-
-            return RunHook(startInfo, "Post");
-        }
-
-        private static int RunHook(ProcessStartInfo startInfo, string type)
-        {
-            int exitCode;
             try
             {
-                using var process = Process.Start(startInfo);
-                process.WaitForExit();
-                exitCode = process.ExitCode;
+                if (store.Exists(cert))
+                {
+                    if (!opts.Force)
+                    {
+                        Log.Information("Local certificate {Name} has identical thumbprint", cert.CertificateName);
+                        return new DownloadResult(DownloadStatus.AlreadyExists, cert);
+                    }
+                    else
+                    {
+                        Log.Information("Force replacing local certificate {Name}", cert.CertificateName);
+                    }
+                }
+
+                return store.Save(cert, chain);
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "{HookType} hook '{Hook}' '{HookArguments}' failed to run", type, startInfo.FileName, startInfo.Arguments);
-                return -1;
+                Log.Error(ex, "Error saving local certificate {Name}", cert.CertificateName);
+                return new DownloadResult(DownloadStatus.Error);
             }
+        }
 
-            if (exitCode == 0)
+        private void AddAutomation(string name)
+        {
+            var config = opts.ShallowCopy();
+            config.Name = name;
+
+            string file = Path.Combine(opts.ConfigDirectory, $"download_{name}.json");
+
+            try
             {
-                Log.Information("{HookType} hook '{Hook}' '{HookArguments}' completed successfully", type, startInfo.FileName, startInfo.Arguments);
-                return 0;
-            }
+                File.WriteAllText(file, JsonSerializer.Serialize(config, new JsonSerializerOptions()
+                {
+                    WriteIndented = true
+                }));
 
-            Log.Warning("{HookType} hook '{Hook}' '{HookArguments}' completed with exit code {ExitCode}", type, startInfo.FileName, startInfo.Arguments, exitCode);
-            return exitCode;
+                Log.Information("Added automation config for {Name} to {File}", name, file);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error saving automation config for {Name} to {File}", name, file);
+            }
         }
     }
 }

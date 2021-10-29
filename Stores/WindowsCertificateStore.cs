@@ -31,10 +31,7 @@ namespace keyvault_certsync.Stores
             var x509 = Get(cert.Thumbprint);
 
             if (x509 != null && x509.HasPrivateKey)
-            {
-                Log.Information("Local certificate has identical thumbprint");
                 return true;
-            }
 
             return false;
         }
@@ -44,7 +41,9 @@ namespace keyvault_certsync.Stores
             using var store = new X509Store(location);
             store.Open(OpenFlags.ReadWrite);
 
-            Log.Information("Adding certificate {Subject}", chain[0].Subject);
+            Log.Information("Saving certificate {Name} to {Store}", cert.CertificateName, location.ToString());
+
+            Log.Debug("Adding certificate {Subject}", chain[0].Subject);
 
             chain[0].FriendlyName = cert.CertificateName;
             store.Add(chain[0]);
@@ -54,7 +53,7 @@ namespace keyvault_certsync.Stores
 
             for (int i = 1; i < chain.Count; i++)
             {
-                Log.Information("Adding chain certificate {Subject}", chain[i].Subject);
+                Log.Debug("Adding chain certificate {Subject}", chain[i].Subject);
                 rootStore.Add(chain[i]);
             }
 

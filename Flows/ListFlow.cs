@@ -6,7 +6,7 @@ namespace keyvault_certsync.Flows
 {
     public class ListFlow : BaseFlow
     {
-        public ListFlow(ListOptions opts, TokenCredential credential) : base(opts, credential)
+        public ListFlow(ListOptions opts, TokenCredential credential) : base(credential, opts.KeyVault)
         {
 
         }

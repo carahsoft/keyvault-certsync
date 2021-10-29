@@ -2,6 +2,7 @@
 using Azure.Identity;
 using CommandLine;
 using keyvault_certsync.Flows;
+using keyvault_certsync.Models;
 using keyvault_certsync.Options;
 using keyvault_certsync.Stores;
 using Serilog;
@@ -16,6 +17,8 @@ namespace keyvault_certsync
 {
     class Program
     {
+        protected const string CONFIG_FILE = "config.json";
+
         static int Main(string[] args)
         {
             string log_format = "{Level:u3}] {Message:lj}{NewLine}{ExceptionMessage}";
@@ -23,20 +26,51 @@ namespace keyvault_certsync
 
             var levelSwitch = new LoggingLevelSwitch
             {
+                MinimumLevel = LogEventLevel.Information
+            };
+
+            var consoleLevelSwitch = new LoggingLevelSwitch
+            {
                 MinimumLevel = LogEventLevel.Verbose
             };
 
             string logDir = GetLogDirectory();
 
             var log_config = new LoggerConfiguration()
+                .MinimumLevel.ControlledBy(levelSwitch)
                 .Enrich.WithExceptionMessage()
-                .WriteTo.Console(outputTemplate: log_format, levelSwitch: levelSwitch)
+                .WriteTo.Console(outputTemplate: log_format, levelSwitch: consoleLevelSwitch)
                 .WriteTo.File(Path.Combine(logDir, "keyvault-certsync.log"), outputTemplate: file_format,
                     rollingInterval: RollingInterval.Month, retainedFileCountLimit: 6);
 
             Log.Logger = log_config.CreateLogger();
 
-            TokenCredential credential;
+            var parserResult = Parser.Default.ParseArguments<ListOptions, DownloadOptions, SyncOptions, UploadOptions, DeleteOptions>(args);
+
+            BaseOptions opts = null;
+            parserResult.WithParsed((BaseOptions o) => opts = o );
+
+            if (opts == null)
+            {
+                Log.CloseAndFlush();
+                return -1;
+            }
+
+            if (opts.Debug)
+                levelSwitch.MinimumLevel = LogEventLevel.Verbose;
+
+            if (opts.Quiet)
+                consoleLevelSwitch.MinimumLevel = LogEventLevel.Warning;
+
+            if (string.IsNullOrEmpty(opts.ConfigDirectory))
+                opts.ConfigDirectory = GetConfigDirectory();
+
+            var config_file = Path.Combine(opts.ConfigDirectory, CONFIG_FILE);
+            var config = Config.LoadConfig(config_file) ?? new Config();
+
+            config.SetEnvironment();
+
+            TokenCredential credential;       
             try
             {
                 credential = GetCredential();
@@ -48,42 +82,59 @@ namespace keyvault_certsync
                 return -1;
             }
 
-            int result = Parser.Default.ParseArguments<ListOptions, DownloadOptions, UploadOptions>(args).MapResult(
+            int ret = parserResult.MapResult(
                 (ListOptions opts) => new ListFlow(opts, credential).Run(),
-                (DownloadOptions opts) =>
-                {
-                    if (opts.Quiet)
-                        levelSwitch.MinimumLevel = LogEventLevel.Warning;
+                (DownloadOptions opts) => new DownloadFlow(opts, credential).Run(),
+                (SyncOptions opts) => new SyncFlow(opts, credential).Run(),
+                (UploadOptions opts) => new UploadFlow(opts, credential).Run(),
+                (DeleteOptions opts) =>new DeleteFlow(opts, credential).Run(),
+                errors => -1);
 
-                    return new DownloadFlow(opts, credential).Run();
-                },
-                (UploadOptions opts) =>
-                {
-                    if (opts.Quiet)
-                        levelSwitch.MinimumLevel = LogEventLevel.Warning;
+            if (Hooks.RunPostHooks() != 0)
+                ret = -1;
 
-                    return new UploadFlow(opts, credential).Run();
-                },
-                errs => HandleParseError());
+            if (ret == 0)
+            {
+                if(config.GetEnvironment())
+                    config.SaveConfig(config_file);
+            }
 
             Log.CloseAndFlush();
-            return result;
+            return ret;
         }
 
         private static string GetLogDirectory()
         {
             try
             {
-                string logDir = Path.Combine(
-                    (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "/var/log/" :
-                        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData)),
-                    "keyvault-certsync");
-                Directory.CreateDirectory(logDir);
-                return logDir;
+                string dir =
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "keyvault-certsync", "logs") :
+                        Path.Combine("/var/log/keyvault-certsync");
+                Directory.CreateDirectory(dir);
+                return dir;
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Error creating log directory. Defaulting to working directory. {ex.Message}");
+                return string.Empty;
+            }
+        }
+
+        private static string GetConfigDirectory()
+        {
+            try
+            {
+                string dir =
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "keyvault-certsync", "config") :
+                        Path.Combine("/etc/keyvault-certsync");
+                Directory.CreateDirectory(dir);
+                return dir;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error creating config directory. Defaulting to working directory.");
                 return string.Empty;
             }
         }
@@ -116,11 +167,6 @@ namespace keyvault_certsync
             }
 
             return new DefaultAzureCredential();
-        }
-
-        private static int HandleParseError()
-        {
-            return -1;
         }
     }
 }

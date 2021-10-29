@@ -11,7 +11,7 @@ namespace keyvault_certsync.Flows
     {
         private readonly UploadOptions opts;
 
-        public UploadFlow(UploadOptions opts, TokenCredential credential) : base(opts, credential)
+        public UploadFlow(UploadOptions opts, TokenCredential credential) : base(credential, opts.KeyVault)
         {
             this.opts = opts;
         }
@@ -20,19 +20,19 @@ namespace keyvault_certsync.Flows
         {
             if (!File.Exists(opts.Certificate))
             {
-                Log.Error("Certificate {Path} not found", opts.Certificate);
+                Log.Error("Certificate {File} not found", opts.Certificate);
                 return -1;
             }
 
             if (!File.Exists(opts.PrivateKey))
             {
-                Log.Error("Private key {Path} not found", opts.PrivateKey);
+                Log.Error("Private key {File} not found", opts.PrivateKey);
                 return -1;
             }
 
             if (!string.IsNullOrEmpty(opts.Chain) && !File.Exists(opts.Chain))
             {
-                Log.Error("Certificate chain {Path} not found", opts.PrivateKey);
+                Log.Error("Certificate chain {File} not found", opts.PrivateKey);
                 return -1;
             }
 
@@ -44,7 +44,7 @@ namespace keyvault_certsync.Flows
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error reading certificate files");
+                Log.Error(ex, "Error reading certificate files {File}", opts.Certificate);
                 return -1;
             }
 
@@ -56,17 +56,40 @@ namespace keyvault_certsync.Flows
             {
                 if (string.Equals(cert.Thumbprint, chain[0].Thumbprint, StringComparison.CurrentCultureIgnoreCase))
                 {
-                    Log.Information("Key vault certificate has identical thumbprint");
-                    return 0;
+                    if (!opts.Force)
+                    {
+                        Log.Information("Key vault certificate {Name} has identical thumbprint", opts.Name);
+                        return 0;
+                    }
+                    else
+                    {
+                        Log.Information("Force replacing key vault certificate {Name}", opts.Name);
+                    }
+                }
+                else
+                {
+                    Log.Debug("Updating key vault certificate {Name}", opts.Name);
                 }
 
-                Log.Information("Replacing exisiting key vault certificate");
                 key = cert.SecretName;
+            }
+            else
+            {
+                Log.Debug("Creating key vault certificate {Name}", opts.Name);
             }
 
             var secret = chain.ToKeyVaultSecret(key, opts.Name);
 
-            client.SetSecret(secret);
+            try
+            {
+                client.SetSecret(secret);
+                Log.Information("Uploaded certificate {Name} to key {Key}", opts.Name, key);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error uploading certificate {Name} to key {Key}", opts.Name, key);
+                return -1;
+            }
 
             return 0;
         }

@@ -1,7 +1,6 @@
 ﻿using Azure.Core;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
-using keyvault_certsync.Options;
 using Serilog;
 using System;
 
@@ -11,9 +10,14 @@ namespace keyvault_certsync.Flows
     {
         protected readonly SecretClient client;
 
-        public BaseFlow(BaseOptions opts, TokenCredential credential)
+        public BaseFlow()
         {
-            var kvUri = "https://" + opts.KeyVault + ".vault.azure.net";
+
+        }
+
+        public BaseFlow(TokenCredential credential, string keyvault)
+        {
+            var kvUri = "https://" + keyvault + ".vault.azure.net";
             client = new SecretClient(new Uri(kvUri), credential);
         }
 

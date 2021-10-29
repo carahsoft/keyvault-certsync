@@ -1,13 +1,12 @@
 ﻿using CommandLine;
-using System.Security.Cryptography.X509Certificates;
 
 namespace keyvault_certsync.Options
 {
     [Verb("upload", HelpText = "Upload certificate to Key Vault")]
     public class UploadOptions : BaseOptions
     {
-        [Option('q', "quiet", HelpText = "Suppress output")]
-        public bool Quiet { get; set; }
+        [Option('v', "keyvault", Required = true, HelpText = "Azure Key Vault name")]
+        public virtual string KeyVault { get; set; }
 
         [Option('n', "name", Required = true, HelpText = "Name of certificate")]
         public string Name { get; set; }

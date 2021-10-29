@@ -36,15 +36,12 @@ namespace keyvault_certsync.Stores
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error reading local certificate");
+                Log.Error(ex, "Exception reading local certificate, replacing");
                 return false;
             }
 
             if (string.Equals(cert.Thumbprint, x509.Thumbprint, StringComparison.CurrentCultureIgnoreCase))
-            {
-                Log.Information("Local certificate has identical thumbprint");
                 return true;
-            }
 
             return false;
         }
@@ -54,11 +51,11 @@ namespace keyvault_certsync.Stores
             if (!Directory.Exists(cert.GetPath(path)))
                 Directory.CreateDirectory(cert.GetPath(path));
 
-            Log.Information("Saving certificate to {Path}", cert.GetPath(path));
+            Log.Information("Saving certificate {Name} to {Path}", cert.CertificateName, cert.GetPath(path));
 
             var pemFullChain = new StringBuilder();
 
-            Log.Information("Adding certificate {Subject}", chain[0].Subject);
+            Log.Debug("Adding certificate {Subject}", chain[0].Subject);
 
             string pemCert = chain[0].ToCertificatePEM();
             pemFullChain.AppendLine(pemCert);
@@ -67,7 +64,7 @@ namespace keyvault_certsync.Stores
             var pemChain = new StringBuilder();
             for (int i = 1; i < chain.Count; i++)
             {
-                Log.Information("Adding chain certificate {Subject}", chain[i].Subject);
+                Log.Debug("Adding chain certificate {Subject}", chain[i].Subject);
 
                 pemChain.AppendLine(chain[i].ToCertificatePEM());
                 pemFullChain.AppendLine(chain[i].ToCertificatePEM());
@@ -88,7 +85,10 @@ namespace keyvault_certsync.Stores
                 File.WriteAllText(cert.GetPath(path, FULLKEYCHAIN_PEM), pemFullChain.ToString());
             }
 
-            return new DownloadResult(DownloadStatus.Downloaded, cert);
+            return new DownloadResult(DownloadStatus.Downloaded, cert)
+            {
+                Path = cert.GetPath(path)
+            };
         }
 
         private static void CreateFileWithUserReadWrite(string filename)

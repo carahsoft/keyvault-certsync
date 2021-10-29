@@ -1,10 +1,20 @@
 ﻿using CommandLine;
+using System.Text.Json.Serialization;
 
 namespace keyvault_certsync.Options
 {
     public class BaseOptions
     {
-        [Option('v', "keyvault", Required = true, HelpText = "Azure Key Vault name")]
-        public string KeyVault { get; set; }
+        [JsonIgnore]
+        [Option('q', "quiet", HelpText = "Suppress output")]
+        public bool Quiet { get; set; }
+
+        [JsonIgnore]
+        [Option("debug", HelpText = "Enable debug output")]
+        public bool Debug { get; set; }
+
+        [JsonIgnore]
+        [Option("config", HelpText = "Override directory for config files")]
+        public string ConfigDirectory { get; set; }
     }
 }
