@@ -8,7 +8,7 @@ Be sure to check out the included [Hooks](Hooks) and [Extras](Extras).
 Build a single file executable for your platform using dotnet publish. Check the [RID Catalog](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog) for other platform identifiers.
 ```
 dotnet publish -r linux-x64 -c Release
-dotnet publish -r win-x64-c Release
+dotnet publish -r win-x64 -c Release
 ```
 
 ## Authentication

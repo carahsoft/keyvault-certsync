@@ -112,7 +112,9 @@ namespace keyvault_certsync.Flows
             X509Certificate2Collection chain;
             try
             {
-                chain = client.GetCertificate(cert.SecretName, !string.IsNullOrEmpty(opts.Path) || opts.MarkExportable);
+                chain = client.GetCertificate(cert.SecretName,
+                    keyExportable: !string.IsNullOrEmpty(opts.Path) || opts.MarkExportable,
+                    machineKey: opts.Store.HasValue && opts.Store.Value == StoreLocation.LocalMachine);
                 Log.Information("Downloaded certificate {Name} from key {Key}", cert.CertificateName, cert.SecretName);
             }
             catch (Azure.RequestFailedException ex)

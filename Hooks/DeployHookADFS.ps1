@@ -51,7 +51,7 @@ function Add-CertificatePrivateKeyPermission {
 $thumbprint = Get-EnvironmentCertificateThumbprint
 
 if(!$quiet) {
-    Write-Host "Adding adfssrv read permission to $($thumbprint)y"
+    Write-Host "Adding adfssrv read permission to $($thumbprint)"
 }
 Add-CertificatePrivateKeyPermission -userName "nt service\adfssrv" -permission read -certStoreLocation \LocalMachine\My -certThumbprint $thumbprint -quiet:$quiet
 
