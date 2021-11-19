@@ -68,7 +68,7 @@ try
 }
 catch
 {
-    Write-Host "Error assinging certificate:" -ForegroundColor Red
+    Write-Host "Error assigning certificate:" -ForegroundColor Red
     Write-Host "$($_.Exception)" -ForegroundColor Red   
     exit 1
 }
