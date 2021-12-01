@@ -5,18 +5,20 @@ using keyvault_certsync.Stores;
 using Serilog;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace keyvault_certsync.Flows
 {
     public class DownloadFlow : BaseFlow
     {
         private readonly DownloadOptions opts;
+        private readonly FileType defaultFileTypes =
+            FileType.Cert | FileType.PrivKey | FileType.Chain | FileType.FullChain | FileType.FullChainPrivKey;
 
         public DownloadFlow(DownloadOptions opts, TokenCredential credential) : base(credential, opts.KeyVault)
         {
@@ -28,6 +30,19 @@ namespace keyvault_certsync.Flows
             if (!string.IsNullOrEmpty(opts.Path) && !Directory.Exists(opts.Path))
             {
                 Log.Error("Directory {Path} does not exist", opts.Path);
+                return -1;
+            }
+
+            if (opts.FileTypes.HasValue && !opts.FileTypes.Value.HasFlag(FileType.Cert))
+            {
+                Log.Error("Cert must be specified as a file type");
+                return -1;
+            }
+
+            if (!string.IsNullOrEmpty(opts.Password) && 
+                opts.FileTypes.HasValue && !opts.FileTypes.Value.HasFlag(FileType.Pkcs12))
+            {
+                Log.Error("Password is only supported with the Pkcs12 file type");
                 return -1;
             }
 
@@ -78,7 +93,7 @@ namespace keyvault_certsync.Flows
 
             if (!string.IsNullOrEmpty(opts.Path))
             {
-                store = new FileCertificateStore(opts.Path);
+                store = new FileCertificateStore(opts.Path, opts.FileTypes ?? defaultFileTypes, opts.Password);
             }
             else if (opts.Store.HasValue)
             {
@@ -150,7 +165,10 @@ namespace keyvault_certsync.Flows
             {
                 File.WriteAllText(file, JsonSerializer.Serialize(config, new JsonSerializerOptions()
                 {
-                    WriteIndented = true
+                    WriteIndented = true,
+                    Converters = {
+                        new JsonStringEnumConverter()
+                    }
                 }));
 
                 Log.Information("Added automation config for {Name} to {File}", name, file);

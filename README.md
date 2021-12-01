@@ -57,9 +57,11 @@ To list all certificates in the Key Vault.
   -v, --keyvault       Required. Azure Key Vault name
   -n, --name           Name of certificate. Specify multiple by delimiting with commas.
   -p, --path           (Group: location) Base directory to store certificates
+  -t, --file-types     File types to generate (Cert, PrivKey, Chain, FullChain, FullChainPrivKey, Pkcs12)
+  --password           Password protect PKCS12 keystore
   -s, --store          (Group: location) Windows certificate store (CurrentUser, LocalMachine)
-  -f, --force          Force download even when identical local certificate exists
   --mark-exportable    Mark Windows certificate key as exportable
+  -f, --force          Force download even when identical local certificate exists
   --deploy-hook        Run for each certificate downloaded
   --post-hook          Run after downloading all certificates
   -a, --automate       Generate config to run during sync
@@ -72,16 +74,16 @@ To list all certificates in the Key Vault.
 
 The files generated follow the same convention as common Let's Encrypt utilities like certbot:
 
-* `privkey.pem` : private key for the certificate
-* `fullchain.pem`: the certificate along with CA certificates
-* `chain.pem` : CA certificates only
-* `cert.pem` : just the certificate
+|File |File Type |Default |Description|
+|---- |--------- |------- |-----------|
+|`cert.pem` |Cert |Yes |Just the certificate|
+|`privkey.pem` |PrivKey |Yes |Private key for the certificate|
+|`chain.pem` |Chain |Yes |CA certificates only|
+|`fullchain.pem` |FullChain |Yes |The certificate along with CA certificates|
+|`fullchain.privkey.pem` |FullChainPrivKey |Yes |The concatenation of FullChain and PrivKey|
+|`keystore.pfx` |Pkcs12 |No |PKCS12 keystore with certificate, chain, and private key|
 
-Additionally, following files will be generated:
-
-* `fullchain.privkey.pem` : the concatenation of fullchain and privkey
-
-The `--automate` option will generate a `download_CERTIFICATENAME.json` file in the configuration directory to be used by the `sync` option.
+The `Cert` file type must always be included. The `--password` option can be used in conjunction with the `Pkcs12` file type to password protect the keystore.
 
 The deploy hook will run for each certificate after it is downloaded.
 
@@ -93,6 +95,8 @@ The post hook will run once after all certificates are downloaded. If no certifi
 
 * `CERTIFICATE_NAMES` : A comma-separated list of certificate names that were downloaded
 * `CERTIFICATE_THUMBPRINTS` : A comma-separated list of certificate thumbprints that were downloaded
+
+As long as no download errors occur `--automate` will generate a `download_CERTIFICATENAME.json` file in the configuration directory to be used by `sync`.
 
 #### Linux Examples
 To download all certificates to /etc/keyvault.
@@ -124,6 +128,11 @@ To download all certificates to the LocalMachine certificate store and allow the
 To download all certificates to C:\KeyVault
 ```
 .\keyvault-certsync download -v VAULTNAME -p C:\KeyVault
+```
+
+To download a certificate named website to C:\KeyVault and generate a password protected PKCS12 file.
+```
+.\keyvault-certsync download -v VAULTNAME -n website -p C:\KeyVault -t Cert,Pkcs12 --password secret
 ```
 
 ### sync

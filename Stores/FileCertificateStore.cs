@@ -16,12 +16,17 @@ namespace keyvault_certsync.Stores
         protected const string CHAIN_PEM = "chain.pem";
         protected const string FULLCHAIN_PEM = "fullchain.pem";
         protected const string FULLKEYCHAIN_PEM = "fullchain.privkey.pem";
+        protected const string KEYSTORE_PFX = "keystore.pfx";
 
         private readonly string path;
+        private readonly FileType fileTypes;
+        private readonly string password;
 
-        public FileCertificateStore(string path)
+        public FileCertificateStore(string path, FileType fileTypes, string password = null)
         {
             this.path = path;
+            this.fileTypes = fileTypes;
+            this.password = password;
         }
 
         public bool Exists(CertificateDetails cert)
@@ -57,9 +62,20 @@ namespace keyvault_certsync.Stores
 
             Log.Debug("Adding certificate {Subject}", chain[0].Subject);
 
+            if (fileTypes.HasFlag(FileType.Pkcs12))
+            {
+                var pfx = chain.Export(X509ContentType.Pkcs12, password);
+                CreateFileWithUserReadWrite(cert.GetPath(path, KEYSTORE_PFX));
+                File.WriteAllBytes(cert.GetPath(path, KEYSTORE_PFX), pfx);
+            }
+
             string pemCert = chain[0].ToCertificatePEM();
             pemFullChain.AppendLine(pemCert);
-            File.WriteAllText(cert.GetPath(path, CERT_PEM), pemCert);
+
+            if (fileTypes.HasFlag(FileType.Cert))
+            {
+                File.WriteAllText(cert.GetPath(path, CERT_PEM), pemCert);
+            }
 
             var pemChain = new StringBuilder();
             for (int i = 1; i < chain.Count; i++)
@@ -70,19 +86,32 @@ namespace keyvault_certsync.Stores
                 pemFullChain.AppendLine(chain[i].ToCertificatePEM());
             }
 
-            File.WriteAllText(cert.GetPath(path, CHAIN_PEM), pemChain.ToString());
-            File.WriteAllText(cert.GetPath(path, FULLCHAIN_PEM), pemFullChain.ToString());
+            if (fileTypes.HasFlag(FileType.Chain))
+            {
+                File.WriteAllText(cert.GetPath(path, CHAIN_PEM), pemChain.ToString());
+            }
+
+            if (fileTypes.HasFlag(FileType.FullChain))
+            {
+                File.WriteAllText(cert.GetPath(path, FULLCHAIN_PEM), pemFullChain.ToString());
+            }
 
             if (chain[0].HasPrivateKey)
             {
                 string privKey = chain[0].ToPrivateKeyPEM();
 
-                CreateFileWithUserReadWrite(cert.GetPath(path, PRIVKEY_PEM));
-                File.WriteAllText(cert.GetPath(path, PRIVKEY_PEM), privKey);
+                if (fileTypes.HasFlag(FileType.PrivKey))
+                {
+                    CreateFileWithUserReadWrite(cert.GetPath(path, PRIVKEY_PEM));
+                    File.WriteAllText(cert.GetPath(path, PRIVKEY_PEM), privKey);
+                }
 
                 pemFullChain.AppendLine(privKey);
-                CreateFileWithUserReadWrite(cert.GetPath(path, FULLKEYCHAIN_PEM));
-                File.WriteAllText(cert.GetPath(path, FULLKEYCHAIN_PEM), pemFullChain.ToString());
+                if (fileTypes.HasFlag(FileType.FullChainPrivKey))
+                {
+                    CreateFileWithUserReadWrite(cert.GetPath(path, FULLKEYCHAIN_PEM));
+                    File.WriteAllText(cert.GetPath(path, FULLKEYCHAIN_PEM), pemFullChain.ToString());
+                }
             }
 
             return new DownloadResult(DownloadStatus.Downloaded, cert)

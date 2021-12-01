@@ -4,6 +4,7 @@ using Serilog;
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace keyvault_certsync.Flows
 {
@@ -37,7 +38,12 @@ namespace keyvault_certsync.Flows
                 DownloadOptions config;
                 try
                 {
-                    config = JsonSerializer.Deserialize<DownloadOptions>(File.ReadAllText(file));
+                    config = JsonSerializer.Deserialize<DownloadOptions>(File.ReadAllText(file), new JsonSerializerOptions()
+                    {
+                        Converters = {
+                            new JsonStringEnumConverter()
+                        }
+                    });
                 }
                 catch (Exception ex)
                 {
