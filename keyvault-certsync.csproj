@@ -11,7 +11,7 @@
     <PackageId>keyvault-certsync</PackageId>
     <Authors>keyvault-certsync</Authors>
     <Product>keyvault-certsync</Product>
-    <Copyright>Copyright (C) 2021 Carahsoft</Copyright>
+    <Copyright>Copyright (C) 2022 Carahsoft</Copyright>
   </PropertyGroup>
 
   <ItemGroup>

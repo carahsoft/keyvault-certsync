@@ -129,6 +129,7 @@ namespace keyvault_certsync.Flows
             {
                 chain = client.GetCertificate(cert.SecretName,
                     keyExportable: !string.IsNullOrEmpty(opts.Path) || opts.MarkExportable,
+                    persistKey: opts.Store.HasValue,
                     machineKey: opts.Store.HasValue && opts.Store.Value == StoreLocation.LocalMachine);
                 Log.Information("Downloaded certificate {Name} from key {Key}", cert.CertificateName, cert.SecretName);
             }

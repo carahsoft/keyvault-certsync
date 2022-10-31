@@ -39,13 +39,15 @@ namespace keyvault_certsync
             return Path.Combine(basePath, cert.CertificateName, fileName);
         }
 
-        public static X509Certificate2Collection GetCertificate(this SecretClient secretClient, string secretName, bool keyExportable = false, bool machineKey = false)
+        public static X509Certificate2Collection GetCertificate(this SecretClient secretClient, string secretName,
+            bool keyExportable = false, bool persistKey = false, bool machineKey = false)
         {
             KeyVaultSecret secret = secretClient.GetSecret(secretName);
-            return secret.ToCertificate(keyExportable, machineKey);
+            return secret.ToCertificate(keyExportable, persistKey, machineKey);
         }
 
-        public static X509Certificate2Collection ToCertificate(this KeyVaultSecret secret, bool keyExportable = false, bool machineKey = false)
+        public static X509Certificate2Collection ToCertificate(this KeyVaultSecret secret,
+            bool keyExportable = false, bool persistKey = false, bool machineKey = false)
         {
             if ("application/x-pkcs12".Equals(secret.Properties.ContentType, StringComparison.InvariantCultureIgnoreCase))
             {
@@ -57,6 +59,9 @@ namespace keyvault_certsync
 
                 if (keyExportable)
                     flags |= X509KeyStorageFlags.Exportable;
+
+                if (persistKey)
+                    flags |= X509KeyStorageFlags.PersistKeySet;
 
                 if (machineKey)
                     flags |= X509KeyStorageFlags.MachineKeySet;

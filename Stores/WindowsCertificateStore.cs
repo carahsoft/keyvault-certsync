@@ -38,10 +38,10 @@ namespace keyvault_certsync.Stores
 
         public DownloadResult Save(CertificateDetails cert, X509Certificate2Collection chain)
         {
+            Log.Information("Saving certificate {Name} to {Store}", cert.CertificateName, location.ToString());
+
             using var store = new X509Store(location);
             store.Open(OpenFlags.ReadWrite);
-
-            Log.Information("Saving certificate {Name} to {Store}", cert.CertificateName, location.ToString());
 
             Log.Debug("Adding certificate {Subject}", chain[0].Subject);
 
