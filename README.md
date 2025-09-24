@@ -9,6 +9,7 @@ Build a single file executable for your platform using dotnet publish. Check the
 ```
 dotnet publish -r linux-x64 -c Release
 dotnet publish -r win-x64 -c Release
+dotnet publish -r osx-arm64 -c Release
 ```
 
 ## Authentication
