@@ -56,7 +56,8 @@ To list all certificates in the Key Vault.
 ### download
 ```
   -v, --keyvault       Required. Azure Key Vault name
-  -n, --name           Name of certificate. Specify multiple by delimiting with commas.
+  -n, --name           (Group: certificates) Name of certificate. Specify multiple by delimiting with commas.
+  --all                (Group: certificates) Download all certificates
   -p, --path           (Group: location) Base directory to store certificates
   -t, --file-types     File types to generate (Cert, PrivKey, Chain, FullChain, FullChainPrivKey, Pkcs12)
   --password           Password protect PKCS12 keystore
@@ -102,7 +103,7 @@ As long as no download errors occur `--automate` will generate a `download_CERTI
 #### Linux Examples
 To download all certificates to /etc/keyvault.
 ```
-./keyvault-certsync download -v VAULTNAME -p /etc/keyvault
+./keyvault-certsync download -v VAULTNAME --all -p /etc/keyvault
 ```
 
 To download a certificate named website to /etc/keyvault and generate config to run during sync.
@@ -112,23 +113,23 @@ To download a certificate named website to /etc/keyvault and generate config to 
 
 To run a script after all certificates are downloaded.
 ```
-./keyvault-certsync download -v VAULTNAME -p /etc/keyvault --post-hook "systemctl reload haproxy"
+./keyvault-certsync download -v VAULTNAME --all -p /etc/keyvault --post-hook "systemctl reload haproxy"
 ```
 
 #### Windows Examples
 To download all certificates to the LocalMachine certificate store. 
 ```
-.\keyvault-certsync download -v VAULTNAME -s LocalMachine
+.\keyvault-certsync download -v VAULTNAME --all -s LocalMachine
 ```
 
 To download all certificates to the LocalMachine certificate store and allow the certificate private key to be exported.
 ```
-.\keyvault-certsync download -v VAULTNAME -s LocalMachine --mark-exportable
+.\keyvault-certsync download -v VAULTNAME --all -s LocalMachine --mark-exportable
 ```
 
 To download all certificates to C:\KeyVault
 ```
-.\keyvault-certsync download -v VAULTNAME -p C:\KeyVault
+.\keyvault-certsync download -v VAULTNAME --all -p C:\KeyVault
 ```
 
 To download a certificate named website to C:\KeyVault and generate a password protected PKCS12 file.

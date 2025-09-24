@@ -52,6 +52,10 @@ namespace keyvault_certsync.Flows
                     continue;
                 }
 
+                // Ensure backwards compatibility before --all
+                if (string.IsNullOrEmpty(config.Name))
+                    config.All = true;
+
                 if (opts.Force)
                     config.Force = true;
 

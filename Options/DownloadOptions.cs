@@ -11,8 +11,11 @@ namespace keyvault_certsync.Options
         [Option('v', "keyvault", Required = true, HelpText = "Azure Key Vault name")]
         public virtual string KeyVault { get; set; }
 
-        [Option('n', "name", HelpText = "Name of certificate. Specify multiple by delimiting with commas.")]
+        [Option('n', "name", Group = "certificates", HelpText = "Name of certificate. Specify multiple by delimiting with commas.")]
         public string Name { get; set; }
+
+        [Option("all", Group = "certificates", HelpText = "Download all certificates")]
+        public bool All { get; set; }
 
         [Option('p', "path", Group = "location", HelpText = "Base directory to store certificates")]
         public string Path { get; set; }
