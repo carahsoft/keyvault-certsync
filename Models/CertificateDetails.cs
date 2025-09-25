@@ -7,7 +7,8 @@ namespace keyvault_certsync.Models
     public class CertificateDetails
     {
         public Uri Id { get; } 
-        public string SecretName { get; }  
+        public string Version { get; }
+        public string SecretName { get; } 
         public DateTimeOffset? NotBefore { get; }
         public DateTimeOffset? ExpiresOn { get; }
 
@@ -20,6 +21,7 @@ namespace keyvault_certsync.Models
         public CertificateDetails(SecretProperties secret)
         {
             Id = secret.Id;
+            Version = Id.ToString().Split('/').Last();
             
             SecretName = secret.Name;
             NotBefore = secret.NotBefore;
@@ -44,6 +46,23 @@ namespace keyvault_certsync.Models
                 $"\tThumbprint: {Thumbprint}\n" +
                 $"\tExpiry Date: {ExpiresOn}\n" +
                 $"\tState: {CertificateState}";
+        }
+
+        public string ToShortString()
+        {
+            return $"Secret Name: {SecretName}\n" +
+                   $"\tCertificate Id: {CertificateId}\n" +
+                   $"\tCertificate Name: {CertificateName}";
+        }
+
+        public string ToVersionString()
+        {
+            return $"\tVersion: {Version}\n" +
+                   $"\t\tSerial Number: {SerialNumber}\n" +
+                   $"\t\tThumbprint: {Thumbprint}\n" +
+                   $"\t\tStart Date: {NotBefore}\n" +
+                   $"\t\tExpiry Date: {ExpiresOn}\n" +
+                   $"\t\tState: {CertificateState}";
         }
     }
 }

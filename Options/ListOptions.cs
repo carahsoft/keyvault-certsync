@@ -10,5 +10,8 @@ namespace keyvault_certsync.Options
         
         [Option('n', "name", HelpText = "Name of certificate. Specify multiple by delimiting with commas.")]
         public string Name { get; set; }
+
+        [Option('V', "versions", HelpText = "Show all versions of the certificate(s)")]
+        public bool ShowVersions { get; set; }
     }
 }

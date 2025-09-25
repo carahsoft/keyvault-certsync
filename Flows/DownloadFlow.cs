@@ -39,10 +39,16 @@ namespace keyvault_certsync.Flows
                 return -1;
             }
 
-            if (!string.IsNullOrEmpty(opts.Password) && 
+            if (!string.IsNullOrEmpty(opts.Password) &&
                 opts.FileTypes.HasValue && !opts.FileTypes.Value.HasFlag(FileType.Pkcs12))
             {
                 Log.Error("Password is only supported with the Pkcs12 file type");
+                return -1;
+            }
+
+            if (!string.IsNullOrEmpty(opts.Version) && (string.IsNullOrEmpty(opts.Name) || opts.Name.Contains(',')))
+            {
+                Log.Error("Version can only be specified with a single certificate name");
                 return -1;
             }
 
@@ -58,6 +64,18 @@ namespace keyvault_certsync.Flows
                 {
                     Log.Error("Key vault does not contain certificate with name {Names}", missing);
                     return -1;
+                }
+
+                if (!string.IsNullOrEmpty(opts.Version))
+                {
+                    certs = client.GetCertificateVersions(certs.First().SecretName).Where(w => w.Version == opts.Version);
+
+                    if (!certs.Any())
+                    {
+                        Log.Error("Key vault does not contain certificate with name {Name} version {Version}", 
+                            opts.Name, opts.Version);
+                        return -1;
+                    }
                 }
             }
             else
@@ -130,17 +148,22 @@ namespace keyvault_certsync.Flows
                 chain = client.GetCertificate(cert.SecretName,
                     keyExportable: !string.IsNullOrEmpty(opts.Path) || opts.MarkExportable,
                     persistKey: opts.Store.HasValue,
-                    machineKey: opts.Store.HasValue && opts.Store.Value == StoreLocation.LocalMachine);
-                Log.Information("Downloaded certificate {Name} from key {Key}", cert.CertificateName, cert.SecretName);
+                    machineKey: opts.Store.HasValue && opts.Store.Value == StoreLocation.LocalMachine,
+                    version: opts.Version);
+
+                Log.Information("Downloaded certificate {Name} from key {Key} thumbprint {Thumbprint}", 
+                    cert.CertificateName, cert.SecretName, cert.Thumbprint);
             }
             catch (Azure.RequestFailedException ex)
             {
-                Log.Error(ex, "Error downloading certificate {Name} from key {Key}", cert.CertificateName, cert.SecretName);
+                Log.Error(ex, "Error downloading certificate {Name} from key {Key} thumbprint {Thumbprint}", 
+                    cert.CertificateName, cert.SecretName, cert.Thumbprint);
                 return new DownloadResult(DownloadStatus.Error);
             }
             catch (NotSupportedException ex)
             {
-                Log.Error(ex, "Key vault certificate {Name} from key {Key} is invalid", cert.CertificateName, cert.SecretName);
+                Log.Error(ex, "Key vault certificate {Name} from key {Key} thumbprint {Thumbprint} is invalid", 
+                    cert.CertificateName, cert.SecretName, cert.Thumbprint);
                 return new DownloadResult(DownloadStatus.Error);
             }
 

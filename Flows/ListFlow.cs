@@ -38,9 +38,24 @@ namespace keyvault_certsync.Flows
                 certs = client.GetCertificateDetails();
             }
 
-            
             foreach (var cert in certs)
-                Console.WriteLine(cert.ToString());
+            {
+                if (opts.ShowVersions)
+                {
+                    Console.WriteLine(cert.ToShortString());
+
+                    var versions = client.GetCertificateVersions(cert.SecretName);
+
+                    foreach (var version in versions)
+                    {
+                        Console.WriteLine(version.ToVersionString());
+                    }
+                }
+                else
+                {
+                    Console.WriteLine(cert.ToString());
+                }
+            }
 
             return 0;
         }

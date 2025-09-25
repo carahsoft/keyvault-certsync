@@ -41,6 +41,8 @@ After a successful run any `AZURE_` environment variables will be saved to `conf
 ### list
 ```
   -v, --keyvault    Required. Azure Key Vault name
+  -n, --name        Name of certificate. Specify multiple by delimiting with commas.
+  -V, --versions    Show all versions of the certificate(s)
   -q, --quiet       Suppress output
   --debug           Enable debug output
   --config          Override directory for config files
@@ -53,11 +55,17 @@ To list all certificates in the Key Vault.
 ./keyvault-certsync list -v VAULTNAME
 ```
 
+To list all versions of a certificate named website in the Key Vault.
+```
+./keyvault-certsync list -v VAULTNAME -n website -V
+```
+
 ### download
 ```
   -v, --keyvault       Required. Azure Key Vault name
   -n, --name           (Group: certificates) Name of certificate. Specify multiple by delimiting with commas.
   --all                (Group: certificates) Download all certificates
+  -V, --version        Specific version of the certificate to download (e.g., a1b2c3d4e5f67890123456789abcdef0)
   -p, --path           (Group: location) Base directory to store certificates
   -t, --file-types     File types to generate (Cert, PrivKey, Chain, FullChain, FullChainPrivKey, Pkcs12)
   --password           Password protect PKCS12 keystore

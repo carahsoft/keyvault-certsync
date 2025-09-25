@@ -1,4 +1,5 @@
-﻿using Azure.Security.KeyVault.Secrets;
+﻿using Azure;
+using Azure.Security.KeyVault.Secrets;
 using keyvault_certsync.Models;
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ namespace keyvault_certsync
         public static IEnumerable<CertificateDetails> GetCertificateDetails(this SecretClient secretClient)
         {
             var secrets = secretClient.GetPropertiesOfSecrets();
-            return secrets.Select(s => new CertificateDetails(s));
+            return secrets.Select(s => new CertificateDetails(s)).OrderBy(o => o.CertificateName);
         }
 
         public static IEnumerable<CertificateDetails> GetCertificateDetails(this SecretClient secretClient, IEnumerable<string> names)
@@ -29,6 +30,12 @@ namespace keyvault_certsync
                 .SingleOrDefault(s => s.CertificateName.Equals(name, StringComparison.CurrentCultureIgnoreCase));
         }
 
+        public static IEnumerable<CertificateDetails> GetCertificateVersions(this SecretClient secretClient, string secretName)
+        {
+            var versions = secretClient.GetPropertiesOfSecretVersions(secretName);
+            return versions.Select(s => new CertificateDetails(s)).OrderByDescending(o => o.ExpiresOn);
+        }
+
         public static string GetPath(this CertificateDetails cert, string basePath)
         {
             return Path.Combine(basePath, cert.CertificateName);
@@ -40,9 +47,9 @@ namespace keyvault_certsync
         }
 
         public static X509Certificate2Collection GetCertificate(this SecretClient secretClient, string secretName,
-            bool keyExportable = false, bool persistKey = false, bool machineKey = false)
+            bool keyExportable = false, bool persistKey = false, bool machineKey = false, string version = null)
         {
-            KeyVaultSecret secret = secretClient.GetSecret(secretName);
+            KeyVaultSecret secret = secretClient.GetSecret(secretName, version);
             return secret.ToCertificate(keyExportable, persistKey, machineKey);
         }
 

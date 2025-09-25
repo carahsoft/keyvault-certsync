@@ -17,6 +17,9 @@ namespace keyvault_certsync.Options
         [Option("all", Group = "certificates", HelpText = "Download all certificates")]
         public bool All { get; set; }
 
+        [Option('V',"version", HelpText = "Specific version of the certificate to download (e.g., a1b2c3d4e5f67890123456789abcdef0)")]
+        public string Version { get; set; }
+
         [Option('p', "path", Group = "location", HelpText = "Base directory to store certificates")]
         public string Path { get; set; }
 
