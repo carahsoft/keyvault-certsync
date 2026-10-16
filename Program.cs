@@ -45,7 +45,7 @@ namespace keyvault_certsync
 
             Log.Logger = log_config.CreateLogger();
 
-            var parserResult = Parser.Default.ParseArguments<ListOptions, DownloadOptions, SyncOptions, UploadOptions, DeleteOptions>(args);
+            var parserResult = new Parser(s => { s.AllowMultiInstance = true; s.HelpWriter = Console.Error; s.AutoHelp = true; s.AutoVersion = true; }).ParseArguments<ListOptions, DownloadOptions, SyncOptions, UploadOptions, DeleteOptions>(args);
 
             BaseOptions opts = null;
             parserResult.WithParsed((BaseOptions o) => opts = o );

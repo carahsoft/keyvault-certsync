@@ -1,5 +1,6 @@
 ﻿using keyvault_certsync.Models;
 using Serilog;
+using System;
 using System.Security.Cryptography.X509Certificates;
 
 namespace keyvault_certsync.Stores
@@ -54,7 +55,8 @@ namespace keyvault_certsync.Stores
                 }
             }
             
-            chain[0].FriendlyName = cert.CertificateName;
+            if (OperatingSystem.IsWindows())
+                chain[0].FriendlyName = cert.CertificateName;
 
             Log.Debug("Adding certificate {Subject} with private key", chain[0].Subject);
             store.Add(chain[0]);

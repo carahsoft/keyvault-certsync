@@ -51,7 +51,9 @@ namespace keyvault_certsync.Stores
 
             try
             {
-                x509 = new X509Certificate2(certPath, password);
+                x509 = certPath.EndsWith(".pfx", StringComparison.OrdinalIgnoreCase)
+                    ? X509CertificateLoader.LoadPkcs12FromFile(certPath, password)
+                    : X509CertificateLoader.LoadCertificateFromFile(certPath);
             }
             catch (Exception ex)
             {

@@ -3,6 +3,7 @@ using keyvault_certsync.Options;
 using Serilog;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -154,17 +155,17 @@ namespace keyvault_certsync.Flows
             }
 
             // Display hooks
-            if (!string.IsNullOrEmpty(config.DeployHook))
+            foreach (var hook in config.DeployHook ?? Array.Empty<string>())
             {
-                Log.Debug("  Deploy Hook: {Hook}", config.DeployHook);
+                Log.Debug("  Deploy Hook: {Hook}", hook);
             }
 
-            if (!string.IsNullOrEmpty(config.PostHook))
+            foreach (var hook in config.PostHook ?? Array.Empty<string>())
             {
-                Log.Debug("  Post Hook: {Hook}", config.PostHook);
+                Log.Debug("  Post Hook: {Hook}", hook);
             }
 
-            if (string.IsNullOrEmpty(config.DeployHook) && string.IsNullOrEmpty(config.PostHook))
+            if (!(config.DeployHook?.Any() ?? false) && !(config.PostHook?.Any() ?? false))
             {
                 Log.Debug("  Hooks: None");
             }

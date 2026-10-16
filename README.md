@@ -12,6 +12,14 @@ dotnet publish -r win-x64 -c Release
 dotnet publish -r osx-arm64 -c Release
 ```
 
+### As a .NET tool
+Requires the .NET 10 runtime. The script packs and (re)installs the tool on Windows, macOS and Linux using PowerShell (`pwsh`).
+```
+pwsh install-tool.ps1 -Global      # keyvault-certsync on your PATH
+pwsh install-tool.ps1              # local tool manifest, run with `dotnet keyvault-certsync`
+pwsh install-tool.ps1 -Uninstall   # add -Global for the global tool
+```
+
 ## Authentication
 Authentication to Key Vault is performed using [Azure Identity](https://docs.microsoft.com/en-us/dotnet/api/overview/azure/identity-readme) `DefaultAzureCredential`. To automate certificate deployment it is recommended to use environment variables.
 
@@ -72,8 +80,8 @@ To list all versions of a certificate named website in the Key Vault.
   -s, --store          (Group: location) Windows certificate store (CurrentUser, LocalMachine)
   --mark-exportable    Mark Windows certificate key as exportable
   -f, --force          Force download even when identical local certificate exists
-  --deploy-hook        Run for each certificate downloaded
-  --post-hook          Run after downloading all certificates
+  --deploy-hook        Run for each certificate downloaded. Can be specified multiple times.
+  --post-hook          Run after downloading all certificates. Can be specified multiple times.
   -a, --automate       Generate config to run during sync
   -q, --quiet          Suppress output
   --debug              Enable debug output
@@ -95,7 +103,7 @@ The files generated follow the same convention as common Let's Encrypt utilities
 
 The `Cert` file type must always be included. The `--password` option can be used in conjunction with the `Pkcs12` file type to password protect the keystore.
 
-The deploy hook will run for each certificate after it is downloaded.
+The deploy hook will run for each certificate after it is downloaded. Both hook options can be repeated and run in the order given. Quote hooks that have arguments.
 
 * `CERTIFICATE_NAME` : Name of the certificate
 * `CERTIFICATE_THUMBPRINT` : Thumbprint of the certificate
@@ -106,7 +114,7 @@ The post hook will run once after all certificates are downloaded. If no certifi
 * `CERTIFICATE_NAMES` : A comma-separated list of certificate names that were downloaded
 * `CERTIFICATE_THUMBPRINTS` : A comma-separated list of certificate thumbprints that were downloaded
 
-As long as no download errors occur `--automate` will generate a `download_CERTIFICATENAME.json` file in the configuration directory to be used by `sync`.
+As long as no download errors occur `--automate` will generate a `download_CERTIFICATENAME.json` file in the configuration directory to be used by `sync`. `DeployHook` and `PostHook` in the file can be a string or an array of strings.
 
 #### Linux Examples
 To download all certificates to /etc/keyvault.

@@ -89,9 +89,14 @@ namespace keyvault_certsync.Flows
             {
                 var result = DownloadCertificate(cert);
 
-                if (result.Status == DownloadStatus.Downloaded &&
-                    !string.IsNullOrEmpty(opts.DeployHook) && Hooks.RunDeployHook(opts.DeployHook, result) != 0)
-                    hookFailed = true;
+                if (result.Status == DownloadStatus.Downloaded)
+                {
+                    foreach (var hook in opts.DeployHook ?? Array.Empty<string>())
+                    {
+                        if (!string.IsNullOrEmpty(hook) && Hooks.RunDeployHook(hook, result) != 0)
+                            hookFailed = true;
+                    }
+                }
 
                 if (opts.Automate && result.Status != DownloadStatus.Error)
                     AddAutomation(cert.CertificateName);
@@ -99,8 +104,14 @@ namespace keyvault_certsync.Flows
                 results.Add(result);
             }
 
-            if (results.Any(w => w.Status == DownloadStatus.Downloaded) && !string.IsNullOrEmpty(opts.PostHook))
-                Hooks.AddPostHook(opts.PostHook, results.Where(w => w.Status == DownloadStatus.Downloaded));
+            if (results.Any(w => w.Status == DownloadStatus.Downloaded))
+            {
+                foreach (var hook in opts.PostHook ?? Array.Empty<string>())
+                {
+                    if (!string.IsNullOrEmpty(hook))
+                        Hooks.AddPostHook(hook, results.Where(w => w.Status == DownloadStatus.Downloaded));
+                }
+            }
 
             return results.Any(w => w.Status == DownloadStatus.Error) || hookFailed ? -1 : 0;
         }

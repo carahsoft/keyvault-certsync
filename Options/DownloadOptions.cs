@@ -1,5 +1,6 @@
 ﻿using CommandLine;
 using keyvault_certsync.Models;
+using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json.Serialization;
 
@@ -39,11 +40,13 @@ namespace keyvault_certsync.Options
         [Option('f', "force", HelpText = "Force download even when identical local certificate exists")]
         public bool Force { get; set; }
 
-        [Option("deploy-hook", HelpText = "Run for each certificate downloaded")]
-        public string DeployHook { get; set; }
+        [JsonConverter(typeof(StringOrArrayConverter))]
+        [Option("deploy-hook", HelpText = "Run for each certificate downloaded. Can be specified multiple times.")]
+        public IEnumerable<string> DeployHook { get; set; }
 
-        [Option("post-hook",  HelpText = "Run after downloading all certificates")]
-        public string PostHook { get; set; }
+        [JsonConverter(typeof(StringOrArrayConverter))]
+        [Option("post-hook",  HelpText = "Run after downloading all certificates. Can be specified multiple times.")]
+        public IEnumerable<string> PostHook { get; set; }
 
         [JsonIgnore]
         [Option('a', "automate", HelpText = "Generate config to run during sync")]

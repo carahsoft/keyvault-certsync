@@ -82,8 +82,6 @@ namespace keyvault_certsync
             {
                 byte[] pfx = Convert.FromBase64String(secret.Value);
 
-                var collection = new X509Certificate2Collection();
-
                 var flags = X509KeyStorageFlags.DefaultKeySet;
 
                 if (keyExportable)
@@ -95,9 +93,7 @@ namespace keyvault_certsync
                 if (machineKey)
                     flags |= X509KeyStorageFlags.MachineKeySet;
 
-                collection.Import(pfx, null, flags);
-
-                return collection;
+                return X509CertificateLoader.LoadPkcs12Collection(pfx, null, flags);
             }
 
             throw new NotSupportedException($"Only PKCS#12 is supported. Found Content-Type: {secret.Properties.ContentType}");
